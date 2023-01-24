@@ -3,7 +3,10 @@ package util
 import (
 	"github.com/featbit/featbit-go-sdk/internal/util/log"
 	"io/ioutil"
+	. "net/url"
 	"os"
+	"strings"
+	"unicode"
 )
 
 func ReadFile(file string) []byte {
@@ -25,4 +28,24 @@ func ReadFile(file string) []byte {
 		return []byte(nil)
 	}
 	return fd
+}
+
+func IsEnvSecretValid(envSecret string) bool {
+	es := strings.Trim(envSecret, " ")
+	if es == "" {
+		return false
+	}
+	for _, r := range es {
+		if !unicode.Is(unicode.ASCII_Hex_Digit, r) {
+			return false
+		}
+	}
+	return true
+}
+
+func IsUrl(url string) bool {
+	if _, err := ParseRequestURI(url); err != nil {
+		return false
+	}
+	return true
 }

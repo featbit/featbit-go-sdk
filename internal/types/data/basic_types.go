@@ -48,6 +48,7 @@ type TargetRule struct {
 	IncludedInExpt bool               `json:"includedInExpt"`
 	Conditions     []Condition        `json:"conditions"`
 	Variations     []RolloutVariation `json:"variations"`
+	DispatchKey    string             `json:"dispatchKey"`
 }
 
 type Condition struct {
@@ -65,4 +66,5 @@ type RolloutVariation struct {
 type Fallthrough struct {
 	IncludedInExpt bool               `json:"includedInExpt"`
 	Variations     []RolloutVariation `json:"variations"`
+	DispatchKey    string             `json:"dispatchKey"`
 }
