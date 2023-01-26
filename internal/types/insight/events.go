@@ -14,11 +14,11 @@ func (u *UserEvent) IsSendEvent() bool {
 	return u.User.isValid()
 }
 
-func (u *UserEvent) Add(ele interface{}) interfaces.Event {
+func (u *UserEvent) Add(interface{}) interfaces.Event {
 	return u
 }
 
-func NewUserEvent(user EventUser) interfaces.Event {
+func NewUserEvent(user EventUser) *UserEvent {
 	return &UserEvent{
 		BaseEvent{User: user},
 	}
@@ -41,7 +41,7 @@ func (f *FlagEvent) Add(ele interface{}) interfaces.Event {
 	return f
 }
 
-func NewFlagEvent(user EventUser) interfaces.Event {
+func NewFlagEvent(user EventUser) *FlagEvent {
 	return &FlagEvent{
 		BaseEvent: BaseEvent{User: user},
 	}
@@ -64,7 +64,7 @@ func (m *MetricEvent) Add(ele interface{}) interfaces.Event {
 	return m
 }
 
-func NewMetricEvent(user EventUser) interfaces.Event {
+func NewMetricEvent(user EventUser) *MetricEvent {
 	return &MetricEvent{
 		BaseEvent: BaseEvent{User: user},
 	}
