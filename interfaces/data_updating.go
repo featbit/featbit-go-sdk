@@ -2,7 +2,20 @@ package interfaces
 
 import (
 	"fmt"
+	"io"
 	"time"
+)
+
+const (
+	DataStorageInitError   = "Data Storage init error"
+	DataStorageUpdateError = "Data Storage update error"
+	RequestInvalidError    = "Request invalid"
+	DataInvalidError       = "Received Data invalid"
+	WebsocketError         = "WebSocket error"
+	WebsocketCloseTimeout  = "WebSocket close timeout"
+	UnknownError           = "Unknown error"
+	NetworkError           = "Network error"
+	UnknownCloseCode       = "Unknown close code"
 )
 
 type StateType string
@@ -103,6 +116,7 @@ type DataUpdater interface {
 }
 
 type DataUpdateStatusProvider interface {
+	io.Closer
 	// GetCurrentState returns the current status of the DataSynchronizer
 	// All of the DataSynchronizer implementations are guaranteed to update this status
 	// whenever they successfully initialize, encounter an error, or recover after an error.

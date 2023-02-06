@@ -1,10 +1,12 @@
 package data
 
 const (
-	pingMessageType = "ping"
-	syncMessageType = "data-sync"
-	FullOp          = "full"
-	PatchOp         = "patch"
+	pingMessageType    = "ping"
+	syncMessageType    = "data-sync"
+	FullOp             = "full"
+	PatchOp            = "patch"
+	DefaultSyncMessage = `{"messageType":"data-sync","data":{"timestamp":%d}}`
+	DefaultPingMessage = `{"messageType":"ping","data":{"timestamp":0}}`
 )
 
 type Message struct {

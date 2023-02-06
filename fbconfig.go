@@ -7,15 +7,17 @@ import (
 )
 
 type FBConfig struct {
-	Offline            bool
-	StartWait          time.Duration
-	NetworkFactory     NetworkFactory
-	DataStorageFactory DataStorageFactory
+	Offline                 bool
+	StartWait               time.Duration
+	NetworkFactory          NetworkFactory
+	DataStorageFactory      DataStorageFactory
+	DataSynchronizerFactory DataSynchronizerFactory
 }
 
 var DefaultFBConfig *FBConfig = &FBConfig{
-	Offline:            false,
-	StartWait:          15 * time.Second,
-	NetworkFactory:     factories.NewNetworkBuilder(),
-	DataStorageFactory: factories.NewInMemoryStorageBuilder(),
+	Offline:                 false,
+	StartWait:               15 * time.Second,
+	NetworkFactory:          factories.NewNetworkBuilder(),
+	DataStorageFactory:      factories.NewInMemoryStorageBuilder(),
+	DataSynchronizerFactory: factories.NewStreamingBuilder(),
 }
