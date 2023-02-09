@@ -28,10 +28,10 @@ func (e *EventSenderImp) PostJson(uri string, jsonBytes []byte) ([]byte, error) 
 
 	var resp *http.Response
 	var respErr error
-	for attempt := 0; attempt < e.maxRetryTimes; attempt++ {
+	for attempt := 0; attempt <= e.maxRetryTimes; attempt++ {
 		if attempt > 0 {
 			delay := e.retryInterval << attempt
-			if delay == 0 || delay > time.Second {
+			if delay > time.Second {
 				delay = time.Second
 			}
 			time.Sleep(delay)
@@ -44,6 +44,7 @@ func (e *EventSenderImp) PostJson(uri string, jsonBytes []byte) ([]byte, error) 
 		}
 		req.Header = headers
 		resp, respErr = e.client.Do(req)
+		// close http client， ignore response body
 		if resp != nil && resp.Body != nil {
 			_, _ = ioutil.ReadAll(resp.Body)
 			_ = resp.Body.Close()
@@ -53,6 +54,7 @@ func (e *EventSenderImp) PostJson(uri string, jsonBytes []byte) ([]byte, error) 
 			continue
 		}
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+			log.LogDebug("sending events ok")
 			return nil, nil
 		}
 	}

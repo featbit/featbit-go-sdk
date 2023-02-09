@@ -13,7 +13,7 @@ type NetworkConfigImpl struct {
 }
 
 func (n NetworkConfigImpl) GetHeaders(headers map[string]string) http.Header {
-	res := make(http.Header, len(n.DefaultHeaders))
+	res := make(http.Header, len(n.DefaultHeaders)+len(headers))
 	for k, v := range n.DefaultHeaders {
 		res[k] = v
 	}

@@ -1,8 +1,10 @@
 package factories
 
 import (
+	"fmt"
 	. "github.com/featbit/featbit-go-sdk/interfaces"
 	"github.com/featbit/featbit-go-sdk/internal/datasynchronization"
+	"github.com/gorilla/websocket"
 	"math"
 	"time"
 )
@@ -36,6 +38,11 @@ func (s *StreamingBuilder) MaxRetryTimes(maxRetryTimes int) *StreamingBuilder {
 	return s
 }
 
-func (s *StreamingBuilder) CreateDataSynchronizer(context Context, dataUpdater DataUpdater) DataSynchronizer {
-	return datasynchronization.NewStreaming(context, dataUpdater, s.firstRetryDelay, s.maxRetryTimes)
+func (s *StreamingBuilder) CreateDataSynchronizer(context Context, dataUpdater DataUpdater) (DataSynchronizer, error) {
+	network := context.GetNetwork()
+	_, ok := network.GetWebsocketClient().(*websocket.Dialer)
+	if !ok {
+		return nil, fmt.Errorf("non supported Websocket Client")
+	}
+	return datasynchronization.NewStreaming(context, dataUpdater, s.firstRetryDelay, s.maxRetryTimes), nil
 }

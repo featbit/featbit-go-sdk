@@ -9,6 +9,7 @@ import (
 	"github.com/featbit/featbit-go-sdk/internal/util/log"
 	"github.com/gorilla/websocket"
 	"net"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -90,13 +91,13 @@ type Streaming struct {
 	readyOnce sync.Once
 	// notify that sdk client data sync is ready
 	readyCh chan struct{}
-	// stream ready tag
+	// stream ready sig
 	initialized bool
-	// close stream action should call only only one time
+	// close stream action should call only one time
 	closeOnce sync.Once
 	// notify that stream should clean all resources and quite
 	closeCh chan struct{}
-	// stream close tag
+	// stream close sig
 	streamClosed bool
 	lock         sync.RWMutex
 	// ws connected tag
@@ -208,7 +209,7 @@ func (s *Streaming) onClose(code int, _ string) error {
 		// data updater has handled the data sync error, just ignore it
 		break
 	default:
-		s.dataUpdater.UpdateStatus(ErrorOFFState(UnknownCloseCode, string(code)))
+		s.dataUpdater.UpdateStatus(ErrorOFFState(UnknownCloseCode, strconv.Itoa(code)))
 	}
 	return nil
 }
@@ -266,10 +267,7 @@ func (s *Streaming) onDataProcess(allData *data.All) bool {
 func (s *Streaming) connectRoutine() {
 	for s.connRetryCounter <= s.maxRetryTimes && !s.streamClosed {
 		network := s.context.GetNetwork()
-		dialer, ok := network.GetWebsocketClient().(*websocket.Dialer)
-		if !ok {
-			panic("Non Supported Websocket Client")
-		}
+		dialer := network.GetWebsocketClient().(*websocket.Dialer)
 		streamingUri := s.context.GetStreamingUri()
 		token := util.BuildToken(s.context.GetEnvSecret())
 		urlFormat := strings.Join([]string{streamingUri, authParams}, "")
@@ -278,7 +276,7 @@ func (s *Streaming) connectRoutine() {
 		if err != nil {
 			log.LogDebug("Err in connecting ws server, http code = %v", resp.StatusCode)
 			s.dataUpdater.UpdateStatus(INTERRUPTEDState(NetworkError, err.Error()))
-			if _, ok = err.(*net.DNSError); ok {
+			if _, ok := err.(*net.DNSError); ok {
 				log.LogError("FB GO SDK: Host unknown: %s", err.Error())
 				s.noMoreReconnect()
 				return
@@ -370,7 +368,7 @@ func (s *Streaming) dataProcessRoutine() {
 			}
 			if syncMsg.ok && !s.onDataProcess(syncMsg.data) {
 				// data sync failed, should to reconnect to server
-				s.sendCloseMessageToServer(websocket.CloseGoingAway, CloseAndThenReconnByDatasyncError)
+				_ = s.sendCloseMessageToServer(websocket.CloseGoingAway, CloseAndThenReconnByDatasyncError)
 			} else if syncMsg.isOtherErr {
 				// handle reconnect-able error
 				log.LogWarn("FB GO SDK: Streaming WbSocket will reconnect because of %v", syncMsg.err.Error())
