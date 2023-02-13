@@ -46,3 +46,13 @@ func (s *StreamingBuilder) CreateDataSynchronizer(context Context, dataUpdater D
 	}
 	return datasynchronization.NewStreaming(context, dataUpdater, s.firstRetryDelay, s.maxRetryTimes), nil
 }
+
+type nullDataSynchronizerBuilder struct{}
+
+func ExternalDataSynchronization() DataSynchronizerFactory {
+	return &nullDataSynchronizerBuilder{}
+}
+
+func (n *nullDataSynchronizerBuilder) CreateDataSynchronizer(Context, DataUpdater) (DataSynchronizer, error) {
+	return datasynchronization.NewNullDataSynchronizer(), nil
+}

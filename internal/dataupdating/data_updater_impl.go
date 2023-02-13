@@ -129,7 +129,10 @@ func (d *DataUpdaterImpl) waitFor(state StateType, timeout time.Duration) bool {
 	}
 	for {
 		select {
-		case newState := <-listener:
+		case newState, ok := <-listener:
+			if !ok {
+				return false
+			}
 			if newState.StateType == state {
 				return true
 			}

@@ -63,6 +63,13 @@ type RolloutVariation struct {
 	ExptRollout float64   `json:"exptRollout"`
 }
 
+func (r *RolloutVariation) SplittingPercentage() float64 {
+	if len(r.Rollout) == 2 {
+		return r.Rollout[1] - r.Rollout[0]
+	}
+	return 0
+}
+
 type Fallthrough struct {
 	IncludedInExpt bool               `json:"includedInExpt"`
 	Variations     []RolloutVariation `json:"variations"`

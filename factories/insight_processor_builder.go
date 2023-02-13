@@ -22,6 +22,15 @@ type InsightProcessorBuilder struct {
 	maxRetryTimes int
 }
 
+func NewInsightProcessorBuilder() *InsightProcessorBuilder {
+	return &InsightProcessorBuilder{
+		capacity:      DefaultCapacity,
+		flushInterval: DefaultFlushInterval,
+		retryInterval: DefaultRetryDelay,
+		maxRetryTimes: DefaultRetryTimes,
+	}
+}
+
 func (i *InsightProcessorBuilder) Capacity(capacity int) *InsightProcessorBuilder {
 	if capacity <= 0 {
 		i.capacity = DefaultCapacity
@@ -90,4 +99,14 @@ func (i *InsightProcessorBuilder) CreateInsightEventSender(context Context) (Sen
 		maxRetryTimes = 3
 	}
 	return insight.NewEventSenderImp(client, headers, retryInterval, maxRetryTimes), nil
+}
+
+type nullInsightProcessorBuilder struct{}
+
+func ExternalEventTrack() InsightProcessorFactory {
+	return &nullInsightProcessorBuilder{}
+}
+
+func (n *nullInsightProcessorBuilder) CreateInsightProcessor(Context) (InsightProcessor, error) {
+	return insight.NewNullEventProcessor(), nil
 }

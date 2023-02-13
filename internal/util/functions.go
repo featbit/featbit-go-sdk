@@ -41,7 +41,7 @@ func IsEnvSecretValid(envSecret string) bool {
 		return false
 	}
 	for _, r := range es {
-		if !unicode.Is(unicode.ASCII_Hex_Digit, r) {
+		if r > unicode.MaxASCII {
 			return false
 		}
 	}

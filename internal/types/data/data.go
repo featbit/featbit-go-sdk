@@ -55,12 +55,12 @@ func (d *Data) ToStorageType() map[Category]map[string]Item {
 		}
 	}
 	flags := make(map[string]Item, len(d.FeatureFlags))
-	for _, flag := range d.FeatureFlags {
-		put(flags, &flag)
+	for i := 0; i < len(d.FeatureFlags); i++ {
+		put(flags, &d.FeatureFlags[i])
 	}
 	segments := make(map[string]Item, len(d.Segments))
-	for _, segment := range d.Segments {
-		put(segments, &segment)
+	for i := 0; i < len(d.Segments); i++ {
+		put(segments, &d.Segments[i])
 	}
 	data := make(map[Category]map[string]Item, 2)
 	data[Features] = flags

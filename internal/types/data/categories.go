@@ -1,6 +1,6 @@
 package data
 
-import "github.com/featbit/featbit-go-sdk/interfaces"
+import . "github.com/featbit/featbit-go-sdk/interfaces"
 
 // category type for the feature flag
 type features struct{}
@@ -43,10 +43,10 @@ func (d datatests) GetTag() string {
 
 var (
 	// Features global instance of features category
-	Features interfaces.Category = features{}
+	Features Category = features{}
 	// Segments global instance of segments category
-	Segments interfaces.Category = segments{}
+	Segments Category = segments{}
 	// Datatests Datetests global instance of datatests category
-	Datatests interfaces.Category = datatests{}
-	AllCats                       = []interfaces.Category{Features, Segments, Datatests}
+	Datatests Category = datatests{}
+	AllCats            = []Category{Features, Segments, Datatests}
 )

@@ -12,6 +12,7 @@ type FBConfig struct {
 	NetworkFactory          NetworkFactory
 	DataStorageFactory      DataStorageFactory
 	DataSynchronizerFactory DataSynchronizerFactory
+	InsightProcessorFactory InsightProcessorFactory
 }
 
 var DefaultFBConfig *FBConfig = &FBConfig{
@@ -20,4 +21,5 @@ var DefaultFBConfig *FBConfig = &FBConfig{
 	NetworkFactory:          factories.NewNetworkBuilder(),
 	DataStorageFactory:      factories.NewInMemoryStorageBuilder(),
 	DataSynchronizerFactory: factories.NewStreamingBuilder(),
+	InsightProcessorFactory: factories.NewInsightProcessorBuilder(),
 }

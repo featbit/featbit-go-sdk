@@ -121,7 +121,7 @@ func NewStreaming(context Context, dataUpdater DataUpdater, firstRetryDelay time
 
 func (s *Streaming) Close() error {
 	s.closeOnce.Do(func() {
-		log.LogInfo("FB JAVA SDK: streaming is stopping...")
+		log.LogInfo("FB GO SDK: streaming is stopping")
 		s.streamClosed = true
 		close(s.closeCh)
 	})
@@ -275,12 +275,13 @@ func (s *Streaming) connectRoutine() {
 		conn, resp, err := dialer.Dial(url, network.GetHeaders(nil))
 		if err != nil {
 			log.LogDebug("Err in connecting ws server, http code = %v", resp.StatusCode)
-			s.dataUpdater.UpdateStatus(INTERRUPTEDState(NetworkError, err.Error()))
 			if _, ok := err.(*net.DNSError); ok {
 				log.LogError("FB GO SDK: Host unknown: %s", err.Error())
+				s.dataUpdater.UpdateStatus(ErrorOFFState(NetworkError, err.Error()))
 				s.noMoreReconnect()
 				return
 			}
+			s.dataUpdater.UpdateStatus(INTERRUPTEDState(NetworkError, err.Error()))
 			delayToReconnect := s.strategy.NextDelay()
 			log.LogError("FB GO SDK: Streaming Websocket network error  : %s, try to reconnect...", err.Error())
 			time.Sleep(delayToReconnect)
@@ -293,7 +294,7 @@ func (s *Streaming) connectRoutine() {
 		s.conn = conn
 		s.conn.SetCloseHandler(s.onClose)
 		s.r2pChan = make(chan *syncMessage, R2PChCap)
-		s.lock.RUnlock()
+		s.lock.Unlock()
 		_ = s.onOpen()
 		go s.readRoutine()
 		go s.dataProcessRoutine()
@@ -363,7 +364,7 @@ func (s *Streaming) dataProcessRoutine() {
 			_ = s.onPing()
 		case syncMsg, ok := <-s.r2pChan:
 			if !ok {
-				log.LogDebug("quit the routine by unexpected error or close, maybe reconnect later")
+				log.LogDebug("quit the routine by error or close, maybe reconnect later")
 				return
 			}
 			if syncMsg.ok && !s.onDataProcess(syncMsg.data) {

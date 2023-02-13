@@ -63,3 +63,10 @@ func (f *FeatureFlag) UnmarshalJSON(bytes []byte) error {
 func (f *FeatureFlag) ToArchivedItem() interfaces.Item {
 	return NewArchivedItem(f.Key, f.timestamp)
 }
+
+func (f *FeatureFlag) GetFlagValue(variationId string) string {
+	if variation, ok := f.variationMap[variationId]; ok {
+		return variation.Value
+	}
+	return ""
+}

@@ -17,8 +17,11 @@ type SDKContext struct {
 	network      Network
 }
 
-func NewSDKContext(envSecret string, streamingUrl string, eventUrl string, network Network) *SDKContext {
-	return &SDKContext{envSecret: envSecret, streamingUrl: streamingUrl, eventUrl: eventUrl, network: network}
+func FromConfig(envSecret string, streamingUrl string, eventUrl string, factory NetworkFactory) (*SDKContext, error) {
+	var err error
+	ctx := &SDKContext{envSecret: envSecret, streamingUrl: streamingUrl, eventUrl: eventUrl}
+	ctx.network, err = factory.CreateNetwork(ctx)
+	return ctx, err
 }
 
 func (c *SDKContext) GetEnvSecret() string {
@@ -27,12 +30,12 @@ func (c *SDKContext) GetEnvSecret() string {
 
 func (c *SDKContext) GetStreamingUri() string {
 	url := strings.TrimRight(c.streamingUrl, "/")
-	return strings.Join([]string{url, streamingPath}, "/")
+	return strings.Join([]string{url, streamingPath}, "")
 }
 
 func (c *SDKContext) GetEventUri() string {
 	url := strings.TrimRight(c.eventUrl, "/")
-	return strings.Join([]string{url, eventPath}, "/")
+	return strings.Join([]string{url, eventPath}, "")
 }
 
 func (c *SDKContext) GetNetwork() Network {

@@ -52,11 +52,11 @@ type Metric struct {
 	Timestamp    int64   `json:"timestamp"`
 }
 
-func NewMetric(evt string, weight float64) Metric {
+func NewMetric(eventName string, weight float64) Metric {
 	return Metric{
 		Route:        "index/metric",
 		Type:         "CustomEvent",
-		EventName:    evt,
+		EventName:    eventName,
 		NumericValue: weight,
 		AppType:      "goserverside",
 		Timestamp:    time.Now().UnixNano() / int64(time.Millisecond),

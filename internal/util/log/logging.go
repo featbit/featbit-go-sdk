@@ -24,7 +24,7 @@ type Logger interface {
 }
 
 type SimpleLogger struct {
-	level int
+	Level int
 }
 
 func (s *SimpleLogger) Errorf(format string, args ...interface{}) {
@@ -33,21 +33,21 @@ func (s *SimpleLogger) Errorf(format string, args ...interface{}) {
 }
 
 func (s *SimpleLogger) Warnf(format string, args ...interface{}) {
-	if s.level <= WARN {
+	if s.Level <= WARN {
 		format = strings.Join([]string{"[WARNING]", time.Now().Format(time.RFC3339), format, "\n"}, " ")
 		fmt.Printf(format, args...)
 	}
 }
 
 func (s *SimpleLogger) Infof(format string, args ...interface{}) {
-	if s.level <= INFO {
+	if s.Level <= INFO {
 		format = strings.Join([]string{"[INFO]", time.Now().Format(time.RFC3339), format, "\n"}, " ")
 		fmt.Printf(format, args...)
 	}
 }
 
 func (s *SimpleLogger) Debugf(format string, args ...interface{}) {
-	if s.level <= DEBUG {
+	if s.Level <= DEBUG {
 		format = strings.Join([]string{"[DEBUG]", time.Now().Format(time.RFC3339), format, "\n"}, " ")
 		fmt.Printf(format, args...)
 	}
@@ -55,7 +55,7 @@ func (s *SimpleLogger) Debugf(format string, args ...interface{}) {
 }
 
 func (s *SimpleLogger) Tracef(format string, args ...interface{}) {
-	if s.level == TRACE {
+	if s.Level == TRACE {
 		format = strings.Join([]string{"[TRACE]", time.Now().Format(time.RFC3339), format, "\n"}, " ")
 		fmt.Printf(format, args...)
 	}
