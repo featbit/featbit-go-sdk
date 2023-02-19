@@ -5,6 +5,7 @@ import "io"
 type Event interface {
 	IsSendEvent() bool
 	Add(ele interface{}) Event
+	GetKey() string
 }
 
 type InsightProcessor interface {

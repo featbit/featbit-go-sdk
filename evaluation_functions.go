@@ -184,7 +184,7 @@ func getRolloutVariationValue(flag *data.FeatureFlag,
 	reason string,
 	ruleIncludedInExperiment bool,
 	dispatchKey string,
-) (evalResult, bool) {
+) (*evalResult, bool) {
 	key := dispatchKey
 	if key == "" {
 		key = "keyid"
@@ -199,20 +199,18 @@ func getRolloutVariationValue(flag *data.FeatureFlag,
 		}
 	}
 	if r != nil {
-		return evalResult{
-			id: r.Id,
-			detail: detail{
-				Reason:  reason,
-				KeyName: flag.Key,
-				Name:    flag.Name,
-			},
+		return &evalResult{
+			id:               r.Id,
+			reason:           reason,
+			keyName:          flag.Key,
+			name:             flag.Name,
 			sendToExperiment: isSendToExperiment(dispatchKeyValue, r, flag.ExptIncludeAllTargets, ruleIncludedInExperiment),
 			fv:               flag.GetFlagValue(r.Id),
 			success:          true,
 			flagType:         flag.VariationType,
 		}, true
 	}
-	return evalResult{}, false
+	return nil, false
 }
 
 func isSendToExperiment(dispatchKey string, rollout *data.RolloutVariation, exptIncludeAllRules bool, ruleIncludedInExperiment bool) bool {

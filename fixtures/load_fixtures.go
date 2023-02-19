@@ -7,11 +7,12 @@ import (
 	"path"
 )
 
-func LoadFBClientTestData() []byte {
+func LoadFBClientTestData() ([]byte, error) {
 	// get root absolute path
 	root, err := os.Getwd()
 	if err != nil {
 		log.LogError("FB GO SDK: error loading file - %v", err)
+		return []byte(nil), err
 	}
 	return util.ReadFile(path.Join(root, "fixtures", "fbclient_test_data.json"))
 }

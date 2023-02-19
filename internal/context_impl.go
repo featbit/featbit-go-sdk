@@ -20,7 +20,9 @@ type SDKContext struct {
 func FromConfig(envSecret string, streamingUrl string, eventUrl string, factory NetworkFactory) (*SDKContext, error) {
 	var err error
 	ctx := &SDKContext{envSecret: envSecret, streamingUrl: streamingUrl, eventUrl: eventUrl}
-	ctx.network, err = factory.CreateNetwork(ctx)
+	if factory != nil {
+		ctx.network, err = factory.CreateNetwork(ctx)
+	}
 	return ctx, err
 }
 

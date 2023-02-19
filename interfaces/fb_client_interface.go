@@ -7,26 +7,26 @@ import (
 // FBEvaluation defines the basic feature flag evaluation methods implemented by FBClient.
 type FBEvaluation interface {
 	// Variation calculates the value of a feature flag for a given user,
-	// return the variation for the given user, or defaultValue if the flag is disabled or an error occurs
-	Variation(featureFlagKey string, user FBUser, defaultValue string) (string, error)
+	// return the variation for the given user, or defaultValue if the flag is disabled or an error occurs;
+	// the details that explains how the flag value is explained and the error if any.
+	Variation(featureFlagKey string, user FBUser, defaultValue string) (string, EvalDetail, error)
 
-	VariationDetail(featureFlagKey string, user FBUser, defaultValue string) (string, EvalDetail, error)
+	BoolVariation(featureFlagKey string, user FBUser, defaultValue bool) (bool, EvalDetail, error)
 
-	BoolVariation(featureFlagKey string, user FBUser, defaultValue bool) (bool, error)
+	IntVariation(featureFlagKey string, user FBUser, defaultValue int) (int, EvalDetail, error)
 
-	BoolVariationDetail(featureFlagKey string, user FBUser, defaultValue bool) (bool, EvalDetail, error)
+	DoubleVariation(featureFlagKey string, user FBUser, defaultValue float64) (float64, EvalDetail, error)
 
-	IntVariation(featureFlagKey string, user FBUser, defaultValue int) (int, error)
+	JsonVariation(featureFlagKey string, user FBUser, defaultValue interface{}) (interface{}, EvalDetail, error)
 
-	IntVariationDetail(featureFlagKey string, user FBUser, defaultValue int) (int, EvalDetail, error)
-
-	DoubleVariation(featureFlagKey string, user FBUser, defaultValue float64) (float64, error)
-
-	DoubleVariationDetail(featureFlagKey string, user FBUser, defaultValue float64) (float64, EvalDetail, error)
-
-	JsonVariation(featureFlagKey string, user FBUser, defaultValue interface{}) (interface{}, error)
-
-	JsonVariationDetail(featureFlagKey string, user FBUser, defaultValue interface{}) (interface{}, EvalDetail, error)
+	// AllLatestFlagsVariations returns a list of all feature flags value with details for a given user, including the reason
+	// describes the way the value was determined.
+	//
+	// The return type AllFlagState could be used as a cache that provides the flag value to a client side sdk or a front-end app.
+	// See more details in AllFlagState.
+	//
+	// This method does not send insight events back to feature flag center.
+	AllLatestFlagsVariations(user FBUser) (AllFlagState, error)
 }
 
 // FBInsight defines the methods implemented by FBClient that are specifically for generating analytics events.
@@ -70,4 +70,7 @@ type FBClientBehaviors interface {
 
 	// IsFlagKnown returns true if the specified feature flag currently exists
 	IsFlagKnown(featureFlagKey string) bool
+
+	// InitializeFromExternalJson initialize FeatBit client in the offline mode
+	InitializeFromExternalJson(jsonStr string) (bool, error)
 }

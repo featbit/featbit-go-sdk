@@ -14,25 +14,22 @@ import (
 	"unicode"
 )
 
-func ReadFile(file string) []byte {
+func ReadFile(file string) ([]byte, error) {
 	f, err := os.Open(file)
 	if err != nil {
 		log.LogError("FB GO SDK: error loading file %s - %v", file, err)
-		return []byte(nil)
+		return []byte(nil), err
 	}
 	defer func(f *os.File) {
-		err := f.Close()
-		if err != nil {
-			log.LogError("FB GO SDK: error closing file %s - %v", f.Name(), err)
-		}
+		_ = f.Close()
 	}(f)
 
 	fd, err := ioutil.ReadAll(f)
 	if err != nil {
 		log.LogError("FB GO SDK: error loading file %s - %v", file, err)
-		return []byte(nil)
+		return []byte(nil), err
 	}
-	return fd
+	return fd, nil
 }
 
 func IsEnvSecretValid(envSecret string) bool {
@@ -49,10 +46,16 @@ func IsEnvSecretValid(envSecret string) bool {
 }
 
 func IsUrl(url string) bool {
-	if _, err := ParseRequestURI(url); err != nil {
+	r, err := ParseRequestURI(url)
+	if err != nil {
 		return false
 	}
-	return true
+	switch r.Scheme {
+	case "http", "https", "ws", "wss":
+		return true
+	default:
+		return false
+	}
 }
 
 var alphabetsMap map[string]string = map[string]string{

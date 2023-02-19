@@ -1,6 +1,7 @@
 package featbit
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/featbit/featbit-go-sdk/factories"
 	. "github.com/featbit/featbit-go-sdk/interfaces"
@@ -11,6 +12,7 @@ import (
 	"github.com/featbit/featbit-go-sdk/internal/types/insight"
 	"github.com/featbit/featbit-go-sdk/internal/util"
 	"github.com/featbit/featbit-go-sdk/internal/util/log"
+	"sync"
 	"time"
 )
 
@@ -23,6 +25,7 @@ type FBClient struct {
 	insightProcessor         InsightProcessor
 	evaluator                *evaluator
 	getFlag                  func(key string) *data.FeatureFlag
+	sendEvent                func(Event)
 }
 
 var (
@@ -177,6 +180,10 @@ func MakeCustomFBClient(envSecret string, streamingUrl string, eventUrl string, 
 		return nil, err
 	}
 
+	client.sendEvent = func(event Event) {
+		client.insightProcessor.Send(event)
+	}
+
 	// run data synchronizer
 	dataSynchronizerFactory := config.DataSynchronizerFactory
 	if client.offline {
@@ -261,7 +268,8 @@ func (client *FBClient) GetDataUpdateStatusProvider() DataUpdateStatusProvider {
 	return client.dataUpdateStatusProvider
 }
 
-// IsFlagKnown returns true if feature flag is registered in the feature flag center
+// IsFlagKnown returns true if feature flag is registered in the feature flag center,
+// false if any error or flag is not existed
 func (client *FBClient) IsFlagKnown(featureFlagKey string) bool {
 	if client.getFlag != nil {
 		return client.getFlag(featureFlagKey) != nil
@@ -274,9 +282,9 @@ func (client *FBClient) Identify(user FBUser) error {
 	if client.insightProcessor == nil {
 		return emptyClient
 	}
-	eventUser := convertFBUserToEventUser(&user)
+	eventUser := insight.ConvertFBUserToEventUser(&user)
 	event := insight.NewUserEvent(eventUser)
-	client.insightProcessor.Send(event)
+	client.sendEvent(event)
 	return nil
 }
 
@@ -298,11 +306,11 @@ func (client *FBClient) TrackNumericMetric(user FBUser, eventName string, metric
 	if client.insightProcessor == nil {
 		return emptyClient
 	}
-	eventUser := convertFBUserToEventUser(&user)
+	eventUser := insight.ConvertFBUserToEventUser(&user)
 	metric := insight.NewMetric(eventName, metricValue)
 	event := insight.NewMetricEvent(eventUser)
 	event.Add(metric)
-	client.insightProcessor.Send(event)
+	client.sendEvent(event)
 	return nil
 }
 
@@ -316,13 +324,13 @@ func (client *FBClient) TrackPercentageMetrics(user FBUser, eventNames ...string
 		return emptyClient
 	}
 	if len(eventNames) > 0 {
-		eventUser := convertFBUserToEventUser(&user)
+		eventUser := insight.ConvertFBUserToEventUser(&user)
 		event := insight.NewMetricEvent(eventUser)
 		for _, eventName := range eventNames {
 			metric := insight.NewMetric(eventName, 1)
 			event.Add(metric)
 		}
-		client.insightProcessor.Send(event)
+		client.sendEvent(event)
 	}
 	return nil
 }
@@ -337,13 +345,13 @@ func (client *FBClient) TrackNumericMetrics(user FBUser, metrics map[string]floa
 		return emptyClient
 	}
 	if len(metrics) > 0 {
-		eventUser := convertFBUserToEventUser(&user)
+		eventUser := insight.ConvertFBUserToEventUser(&user)
 		event := insight.NewMetricEvent(eventUser)
 		for eventName, metricValue := range metrics {
 			metric := insight.NewMetric(eventName, metricValue)
 			event.Add(metric)
 		}
-		client.insightProcessor.Send(event)
+		client.sendEvent(event)
 	}
 	return nil
 }
@@ -360,7 +368,7 @@ func (client *FBClient) Flush() error {
 }
 
 // evaluateInternal internal use for evaluate flag value
-func (client *FBClient) evaluateInternal(featureFlagKey string, user *FBUser, requiredType string) (evalResult, error) {
+func (client *FBClient) evaluateInternal(featureFlagKey string, user *FBUser, requiredType string) (*evalResult, error) {
 	if !client.IsInitialized() {
 		log.LogWarn("FB GO SDK: evaluation is called before GO SDK client is initialized for feature flag, well using the default value")
 		return errorResult(ReasonClientNotReady, featureFlagKey, FlagNameUnknown), clientNotInitialized
@@ -375,14 +383,14 @@ func (client *FBClient) evaluateInternal(featureFlagKey string, user *FBUser, re
 		log.LogWarn("FB GO SDK: invalid user for feature flag %v, returning default value", featureFlagKey)
 		return errorResult(ReasonUserNotSpecified, featureFlagKey, FlagNameUnknown), userInvalid
 	}
-	eventUser := convertFBUserToEventUser(user)
+	eventUser := insight.ConvertFBUserToEventUser(user)
 	event := insight.NewFlagEvent(eventUser)
 	er := client.evaluator.evaluate(flag, user, event)
-	if requiredType != FlagStringType && !er.checkType(requiredType) {
-		return errorResult(ReasonWrongType, featureFlagKey, er.Name), evalWrongType
+	if !er.checkType(requiredType) {
+		return errorResult(ReasonWrongType, featureFlagKey, er.name), evalWrongType
 	}
 	if er.success {
-		client.insightProcessor.Send(event)
+		client.sendEvent(event)
 		return er, nil
 	}
 	log.LogError("FB GO SDK: unexpected error in evaluation")
@@ -392,95 +400,112 @@ func (client *FBClient) evaluateInternal(featureFlagKey string, user *FBUser, re
 func (client *FBClient) evaluateDetail(featureFlagKey string, user *FBUser, requiredType string, defaultValue interface{}) (EvalDetail, error) {
 	er, err := client.evaluateInternal(featureFlagKey, user, requiredType)
 	if err != nil {
-		return evalDetailImpl{Variation: defaultValue, detail: er.detail}, err
+		return EvalDetail{Variation: defaultValue, Reason: er.reason, KeyName: er.keyName, Name: er.name}, err
 	}
 	return er.castVariationByFlagType(requiredType, defaultValue)
 }
 
-func (client *FBClient) Variation(featureFlagKey string, user FBUser, defaultValue string) (string, error) {
-	ed, err := client.evaluateDetail(featureFlagKey, &user, FlagStringType, defaultValue)
-	if err != nil {
-		return defaultValue, err
-	}
-	ret, _ := ed.GetVariation().(string)
-	return ret, nil
-}
-
-func (client *FBClient) BoolVariation(featureFlagKey string, user FBUser, defaultValue bool) (bool, error) {
-	ed, err := client.evaluateDetail(featureFlagKey, &user, FlagBoolType, defaultValue)
-	if err != nil {
-		return defaultValue, err
-	}
-	ret, _ := ed.GetVariation().(bool)
-	return ret, nil
-}
-
-func (client *FBClient) IntVariation(featureFlagKey string, user FBUser, defaultValue int) (int, error) {
-	ed, err := client.evaluateDetail(featureFlagKey, &user, FlagNumericType, defaultValue)
-	if err != nil {
-		return defaultValue, err
-	}
-	ret, _ := ed.GetVariation().(int)
-	return ret, nil
-}
-
-func (client *FBClient) DoubleVariation(featureFlagKey string, user FBUser, defaultValue float64) (float64, error) {
-	ed, err := client.evaluateDetail(featureFlagKey, &user, FlagNumericType, defaultValue)
-	if err != nil {
-		return defaultValue, err
-	}
-	ret, _ := ed.GetVariation().(float64)
-	return ret, nil
-}
-
-func (client *FBClient) JsonVariation(featureFlagKey string, user FBUser, defaultValue interface{}) (interface{}, error) {
-	ed, err := client.evaluateDetail(featureFlagKey, &user, FlagJsonType, defaultValue)
-	if err != nil {
-		return defaultValue, err
-	}
-	return ed.GetVariation, nil
-}
-
-func (client *FBClient) VariationDetail(featureFlagKey string, user FBUser, defaultValue string) (string, EvalDetail, error) {
+func (client *FBClient) Variation(featureFlagKey string, user FBUser, defaultValue string) (string, EvalDetail, error) {
 	ed, err := client.evaluateDetail(featureFlagKey, &user, FlagStringType, defaultValue)
 	if err != nil {
 		return defaultValue, ed, err
 	}
-	ret, _ := ed.GetVariation().(string)
+	ret, _ := ed.Variation.(string)
 	return ret, ed, nil
 }
 
-func (client *FBClient) BoolVariationDetail(featureFlagKey string, user FBUser, defaultValue bool) (bool, EvalDetail, error) {
+func (client *FBClient) BoolVariation(featureFlagKey string, user FBUser, defaultValue bool) (bool, EvalDetail, error) {
 	ed, err := client.evaluateDetail(featureFlagKey, &user, FlagBoolType, defaultValue)
 	if err != nil {
 		return defaultValue, ed, err
 	}
-	ret, _ := ed.GetVariation().(bool)
+	ret, _ := ed.Variation.(bool)
 	return ret, ed, nil
 }
 
-func (client *FBClient) IntVariationDetail(featureFlagKey string, user FBUser, defaultValue int) (int, EvalDetail, error) {
+func (client *FBClient) IntVariation(featureFlagKey string, user FBUser, defaultValue int) (int, EvalDetail, error) {
 	ed, err := client.evaluateDetail(featureFlagKey, &user, FlagNumericType, defaultValue)
 	if err != nil {
 		return defaultValue, ed, err
 	}
-	ret, _ := ed.GetVariation().(int)
+	ret, _ := ed.Variation.(int)
 	return ret, ed, nil
 }
 
-func (client *FBClient) DoubleVariationDetail(featureFlagKey string, user FBUser, defaultValue float64) (float64, EvalDetail, error) {
+func (client *FBClient) DoubleVariation(featureFlagKey string, user FBUser, defaultValue float64) (float64, EvalDetail, error) {
 	ed, err := client.evaluateDetail(featureFlagKey, &user, FlagNumericType, defaultValue)
 	if err != nil {
 		return defaultValue, ed, err
 	}
-	ret, _ := ed.GetVariation().(float64)
+	ret, _ := ed.Variation.(float64)
 	return ret, ed, nil
 }
 
-func (client *FBClient) JsonVariationDetail(featureFlagKey string, user FBUser, defaultValue interface{}) (interface{}, EvalDetail, error) {
+func (client *FBClient) JsonVariation(featureFlagKey string, user FBUser, defaultValue interface{}) (interface{}, EvalDetail, error) {
 	ed, err := client.evaluateDetail(featureFlagKey, &user, FlagJsonType, defaultValue)
 	if err != nil {
 		return defaultValue, ed, err
 	}
-	return ed.GetVariation, ed, nil
+	return ed.Variation, ed, nil
+}
+
+func (client *FBClient) AllLatestFlagsVariations(user FBUser) (AllFlagState, error) {
+	if !client.IsInitialized() {
+		log.LogWarn("FB GO SDK: evaluation is called before GO SDK client is initialized for feature flag, well using the default value")
+		return &allFlagStateImpl{reason: ReasonClientNotReady}, clientNotInitialized
+	}
+	if !user.IsValid() {
+		log.LogWarn("FB GO SDK: invalid user")
+		return &allFlagStateImpl{reason: ReasonUserNotSpecified}, userInvalid
+	}
+	items, err := client.dataStorage.GetAll(data.Features)
+	if err != nil {
+		return &allFlagStateImpl{reason: ReasonError}, err
+	}
+
+	if len(items) == 0 {
+		return &allFlagStateImpl{reason: ReasonFlagNotFound}, flagNotFound
+	}
+
+	ret := &allFlagStateImpl{}
+	var once sync.Once
+	for key, item := range items {
+		if flag, ok := item.(*data.FeatureFlag); ok {
+			eventUser := insight.ConvertFBUserToEventUser(&user)
+			event := insight.NewFlagEvent(eventUser)
+			er := client.evaluator.evaluate(flag, &user, event)
+			if er.success {
+				once.Do(func() {
+					ret.success = true
+					ret.reason = "OK"
+					ret.states = make(map[string]map[evalResult]*insight.FlagEvent, len(items))
+					ret.sendEvent = client.sendEvent
+				})
+				ret.states[key] = map[evalResult]*insight.FlagEvent{*er: event}
+			}
+		}
+	}
+	if !ret.success {
+		log.LogError("FB GO SDK: unexpected error in evaluation")
+		ret.reason = ReasonError
+		return nil, evalFailed
+	}
+	return ret, nil
+}
+
+func (client *FBClient) InitializeFromExternalJson(jsonStr string) (bool, error) {
+	if client.offline && jsonStr != "" {
+		var all data.All
+		if err := json.Unmarshal([]byte(jsonStr), &all); err != nil {
+			return false, err
+		}
+		if all.IsProcessData() {
+			d := all.Data
+			if ok := client.dataUpdater.Init(d.ToStorageType(), d.GetTimestamp()); ok {
+				client.dataUpdater.UpdateStatus(OKState())
+				return true, nil
+			}
+		}
+	}
+	return false, nil
 }

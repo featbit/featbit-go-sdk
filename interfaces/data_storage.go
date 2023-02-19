@@ -26,7 +26,7 @@ type DataStorage interface {
 	io.Closer
 
 	// Init Overwrites the storage with a set of items for each collection, if the new version > the old one
-	Init(allDate map[Category]map[string]Item, version int64) error
+	Init(allData map[Category]map[string]Item, version int64) error
 
 	// Upsert updates or inserts an item in the specified collection. For updates, the object will only be
 	// updated if the existing version is less than the new version; for inserts, if the version > the existing one, it will replace

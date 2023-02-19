@@ -5,6 +5,7 @@ import (
 	. "github.com/featbit/featbit-go-sdk/interfaces"
 	"github.com/featbit/featbit-go-sdk/internal/types/insight"
 	"github.com/featbit/featbit-go-sdk/internal/util/log"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -90,7 +91,8 @@ func (ed *eventDispatcher) runDispatchEvents(inboxCh <-chan insight.EventMessage
 	if ed.closed {
 		return
 	}
-	log.LogDebug("event dispatcher is working...")
+	log.LogDebug("event dispatcher is working")
+	log.LogDebug("flush ticker is starting")
 	flushScheduler := time.NewTicker(flushInterval)
 	for {
 		select {
@@ -103,6 +105,7 @@ func (ed *eventDispatcher) runDispatchEvents(inboxCh <-chan insight.EventMessage
 			case insight.ShutdownMessage:
 				log.LogDebug("event dispatcher is stopping")
 				ed.closed = true
+				log.LogDebug("flush ticker is over")
 				flushScheduler.Stop()
 				ed.permits.Wait()
 				close(ed.outboxCh)
@@ -146,11 +149,13 @@ func (ed *eventDispatcher) putEventToNextBuffer(event Event) {
 	}
 }
 
-func runFlashRunner(eventUri string, sender Sender, outboxCh <-chan *payload, permits *sync.WaitGroup) {
+func runFlashRunner(name string, eventUri string, sender Sender, outboxCh <-chan *payload, permits *sync.WaitGroup) {
+	log.LogDebug("%s is starting", name)
 	for {
 		payloads, running := <-outboxCh
 		if !running {
 			// outbox closed - we're shutting down
+			log.LogDebug("%s is over", name)
 			return
 		}
 		// split the payload into small partitions and send them to feature flag center
@@ -170,7 +175,8 @@ func startEventDispatcher(context Context, inboxCh <-chan insight.EventMessage, 
 		permits:  &sync.WaitGroup{},
 	}
 	for i := 0; i < MaxFlushWorkersNumber; i++ {
-		go runFlashRunner(context.GetEventUri(), sender, ed.outboxCh, ed.permits)
+		name := "flush-worker-" + strconv.Itoa(i)
+		go runFlashRunner(name, context.GetEventUri(), sender, ed.outboxCh, ed.permits)
 	}
 	go ed.runDispatchEvents(inboxCh, flushInterval)
 
@@ -182,12 +188,13 @@ type EventProcessor struct {
 	closeOnce sync.Once
 	// processor closed sig
 	processorClosed bool
+	sender          Sender
 }
 
 func NewEventProcessor(context Context, sender Sender, capacity int, flushInterval time.Duration) *EventProcessor {
 	inboxCh := make(chan insight.EventMessage, capacity)
 	startEventDispatcher(context, inboxCh, sender, capacity, flushInterval)
-	return &EventProcessor{inboxCh: inboxCh}
+	return &EventProcessor{inboxCh: inboxCh, sender: sender}
 }
 
 func (ep *EventProcessor) putMsgToBox(msg insight.EventMessage) bool {
@@ -218,6 +225,7 @@ func (ep *EventProcessor) Close() error {
 		shutdown := insight.NewShutdownMessage()
 		ep.putMsgToBox(shutdown)
 		<-shutdown.GetWaitCh()
+		_ = ep.sender.Close()
 	})
 	return nil
 }

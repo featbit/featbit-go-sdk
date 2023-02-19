@@ -2,11 +2,14 @@ package insight
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/featbit/featbit-go-sdk/internal/util/log"
 	"io/ioutil"
 	"net/http"
 	"time"
 )
+
+var invalidInput = fmt.Errorf("invalid url or json")
 
 type EventSenderImp struct {
 	client        *http.Client
@@ -20,6 +23,11 @@ func NewEventSenderImp(client *http.Client, headers http.Header, retryInterval t
 }
 
 func (e *EventSenderImp) PostJson(uri string, jsonBytes []byte) ([]byte, error) {
+
+	if uri == "" || len(jsonBytes) == 0 {
+		return nil, invalidInput
+	}
+
 	headers := make(http.Header)
 	for k, vv := range e.headers {
 		headers[k] = vv
@@ -60,4 +68,8 @@ func (e *EventSenderImp) PostJson(uri string, jsonBytes []byte) ([]byte, error) 
 	}
 	return nil, respErr
 
+}
+
+func (e *EventSenderImp) Close() error {
+	return nil
 }

@@ -17,9 +17,7 @@ const (
 	ReasonWrongType        = "wrong type"
 	ReasonUserNotSpecified = "user not specified"
 	ReasonError            = "error in evaluation"
-	FlagKeyUnknown         = "flag key unknown"
 	FlagNameUnknown        = "flag Name unknown"
-	FlagValueUnknown       = "flag value unknown"
 	ThanClause             = "Than"
 	GeClause               = "BiggerEqualThan"
 	GtClause               = "BiggerThan"
@@ -48,13 +46,13 @@ const (
 type evaluator struct {
 	getFlag    func(key string) *data.FeatureFlag
 	getSegment func(key string) *data.Segment
-	funcSlice  []func(*data.FeatureFlag, *FBUser) (evalResult, bool)
+	funcSlice  []func(*data.FeatureFlag, *FBUser) (*evalResult, bool)
 }
 
 func newEvaluator(getFlag func(key string) *data.FeatureFlag,
 	getSegment func(key string) *data.Segment) *evaluator {
 	e := &evaluator{getFlag: getFlag, getSegment: getSegment}
-	fs := []func(*data.FeatureFlag, *FBUser) (evalResult, bool){
+	fs := []func(*data.FeatureFlag, *FBUser) (*evalResult, bool){
 		e.matchFeatureFlagDisabledUserVariation,
 		e.matchTargetedUserVariation,
 		e.matchConditionedUserVariation,
@@ -64,7 +62,7 @@ func newEvaluator(getFlag func(key string) *data.FeatureFlag,
 	return e
 }
 
-func (e *evaluator) evaluate(flag *data.FeatureFlag, user *FBUser, event Event) (er evalResult) {
+func (e *evaluator) evaluate(flag *data.FeatureFlag, user *FBUser, event Event) (er *evalResult) {
 	defer func() {
 		if er.success {
 			log.LogInfo("FB Go SDK: User %v, Feature Flag %v, Flag Value %v", user.GetKey(), flag.Key, er.fv)
@@ -84,35 +82,31 @@ func (e *evaluator) evaluate(flag *data.FeatureFlag, user *FBUser, event Event) 
 	return
 }
 
-func (e *evaluator) matchFeatureFlagDisabledUserVariation(flag *data.FeatureFlag, _ *FBUser) (evalResult, bool) {
+func (e *evaluator) matchFeatureFlagDisabledUserVariation(flag *data.FeatureFlag, _ *FBUser) (*evalResult, bool) {
 	if !flag.Enabled {
-		return evalResult{
-			id: flag.DisabledVariationId,
-			detail: detail{
-				Reason:  ReasonFlagOff,
-				KeyName: flag.Key,
-				Name:    flag.Name,
-			},
+		return &evalResult{
+			id:               flag.DisabledVariationId,
+			reason:           ReasonFlagOff,
+			keyName:          flag.Key,
+			name:             flag.Name,
 			sendToExperiment: false,
 			fv:               flag.GetFlagValue(flag.DisabledVariationId),
 			success:          true,
 			flagType:         flag.VariationType,
 		}, true
 	}
-	return evalResult{}, false
+	return nil, false
 }
 
-func (e *evaluator) matchTargetedUserVariation(flag *data.FeatureFlag, user *FBUser) (evalResult, bool) {
+func (e *evaluator) matchTargetedUserVariation(flag *data.FeatureFlag, user *FBUser) (*evalResult, bool) {
 	for _, targetUser := range flag.TargetUsers {
 		for _, keyId := range targetUser.KeyIds {
 			if keyId == user.GetKey() {
-				return evalResult{
-					id: targetUser.VariationId,
-					detail: detail{
-						Reason:  ReasonTargetMatch,
-						KeyName: flag.Key,
-						Name:    flag.Name,
-					},
+				return &evalResult{
+					id:               targetUser.VariationId,
+					reason:           ReasonTargetMatch,
+					keyName:          flag.Key,
+					name:             flag.Name,
 					sendToExperiment: flag.ExptIncludeAllTargets,
 					fv:               flag.GetFlagValue(targetUser.VariationId),
 					success:          true,
@@ -121,10 +115,10 @@ func (e *evaluator) matchTargetedUserVariation(flag *data.FeatureFlag, user *FBU
 			}
 		}
 	}
-	return evalResult{}, false
+	return nil, false
 }
 
-func (e *evaluator) matchConditionedUserVariation(flag *data.FeatureFlag, user *FBUser) (evalResult, bool) {
+func (e *evaluator) matchConditionedUserVariation(flag *data.FeatureFlag, user *FBUser) (*evalResult, bool) {
 	var rule *data.TargetRule
 	for _, targetRule := range flag.Rules {
 		if e.ifUserMatchRule(user, targetRule.Conditions) {
@@ -135,10 +129,10 @@ func (e *evaluator) matchConditionedUserVariation(flag *data.FeatureFlag, user *
 	if rule != nil {
 		return getRolloutVariationValue(flag, rule.Variations, user, ReasonRuleMatch, rule.IncludedInExpt, rule.DispatchKey)
 	}
-	return evalResult{}, false
+	return nil, false
 }
 
-func (e *evaluator) matchFallThroughUserVariation(flag *data.FeatureFlag, user *FBUser) (evalResult, bool) {
+func (e *evaluator) matchFallThroughUserVariation(flag *data.FeatureFlag, user *FBUser) (*evalResult, bool) {
 	ft := flag.Fallthrough
 	return getRolloutVariationValue(flag, ft.Variations, user, ReasonFallthrough, ft.IncludedInExpt, ft.DispatchKey)
 }

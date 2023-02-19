@@ -46,15 +46,17 @@ func (i *InMemoryDataStorage) Upsert(category Category, key string, item Item, v
 	}
 	if items, ok := i.allData[category]; ok {
 		if oldItem, ok1 := items[key]; ok1 {
-			if oldItem.GetTimestamp() < version {
-				items[key] = item
+			if oldItem.GetTimestamp() >= item.GetTimestamp() {
+				return false, nil
 			}
+			items[key] = item
 		} else {
 			items[key] = item
 		}
 	} else {
 		i.allData[category] = map[string]Item{key: item}
 	}
+	i.version = version
 	if !i.initialized {
 		i.initialized = true
 	}

@@ -70,6 +70,7 @@ func newSyncMessage(bytes []byte, err error) *syncMessage {
 	}
 	// ignore pong message
 	if !m.IsSyncMessage() {
+		log.LogTrace("receive pong")
 		return nil
 	}
 	var all data.All
@@ -265,6 +266,7 @@ func (s *Streaming) onDataProcess(allData *data.All) bool {
 }
 
 func (s *Streaming) connectRoutine() {
+	log.LogDebug("connection go routine is starting")
 	for s.connRetryCounter <= s.maxRetryTimes && !s.streamClosed {
 		network := s.context.GetNetwork()
 		dialer := network.GetWebsocketClient().(*websocket.Dialer)
@@ -298,6 +300,7 @@ func (s *Streaming) connectRoutine() {
 		_ = s.onOpen()
 		go s.readRoutine()
 		go s.dataProcessRoutine()
+		log.LogDebug("connection is completed, go routine is over")
 		return
 	}
 }
@@ -306,8 +309,11 @@ func (s *Streaming) readRoutine() (isConnect bool) {
 	if !s.isWsConnected() {
 		return
 	}
-	defer s.reconnect()
-
+	defer func() {
+		log.LogDebug("read go routine is over, reconnect or exit")
+		s.reconnect()
+	}()
+	log.LogDebug("read go routine is starting")
 	for {
 		_, jsonBytes, err := s.conn.ReadMessage()
 		msg := newSyncMessage(jsonBytes, err)
@@ -350,9 +356,14 @@ func (s *Streaming) dataProcessRoutine() {
 	if !s.wsConnected {
 		return
 	}
+	log.LogDebug("data process go routine is starting")
 	// start ping scheduler, stop it at quiting the routine
+	log.LogDebug("ping ticker is starting")
 	s.pingScheduler = time.NewTicker(pingInterval)
-	defer s.pingScheduler.Stop()
+	defer func() {
+		log.LogDebug("ping ticker is over")
+		s.pingScheduler.Stop()
+	}()
 
 	// to listen data to process,
 	// error to restart,
@@ -364,7 +375,7 @@ func (s *Streaming) dataProcessRoutine() {
 			_ = s.onPing()
 		case syncMsg, ok := <-s.r2pChan:
 			if !ok {
-				log.LogDebug("quit the routine by error or close, maybe reconnect later")
+				log.LogWarn("quit the routine by error or close, maybe reconnect later")
 				return
 			}
 			if syncMsg.ok && !s.onDataProcess(syncMsg.data) {
@@ -387,8 +398,9 @@ func (s *Streaming) dataProcessRoutine() {
 			}
 			select {
 			case <-s.r2pChan:
+				log.LogDebug("data process go routine is over")
 			case <-time.After(closeTimeOut):
-				log.LogDebug("time out in closing streaming, force to quit")
+				log.LogWarn("time out in closing streaming, force to quit")
 				s.dataUpdater.UpdateStatus(ErrorOFFState(WebsocketCloseTimeout, WebsocketCloseTimeout))
 			}
 			return

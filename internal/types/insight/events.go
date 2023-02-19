@@ -1,9 +1,16 @@
 package insight
 
-import "github.com/featbit/featbit-go-sdk/interfaces"
+import (
+	. "github.com/featbit/featbit-go-sdk/interfaces"
+	"time"
+)
 
 type BaseEvent struct {
 	User EventUser `json:"user"`
+}
+
+func (b *BaseEvent) GetKey() string {
+	return b.User.KeyId
 }
 
 type UserEvent struct {
@@ -14,7 +21,7 @@ func (u *UserEvent) IsSendEvent() bool {
 	return u.User.isValid()
 }
 
-func (u *UserEvent) Add(interface{}) interfaces.Event {
+func (u *UserEvent) Add(interface{}) Event {
 	return u
 }
 
@@ -33,12 +40,19 @@ func (f *FlagEvent) IsSendEvent() bool {
 	return f.User.isValid() && len(f.Variations) > 0
 }
 
-func (f *FlagEvent) Add(ele interface{}) interfaces.Event {
+func (f *FlagEvent) Add(ele interface{}) Event {
 	flag, ok := ele.(EventFlag)
 	if ok {
 		f.Variations = append(f.Variations, flag)
 	}
 	return f
+}
+
+// UpdateTimestamp only used in interfaces.AllFlagState
+func (f *FlagEvent) UpdateTimestamp() {
+	for i := range f.Variations {
+		f.Variations[i].Timestamp = time.Now().UnixNano() / int64(time.Millisecond)
+	}
 }
 
 func NewFlagEvent(user EventUser) *FlagEvent {
@@ -56,7 +70,7 @@ func (m *MetricEvent) IsSendEvent() bool {
 	return m.User.isValid() && len(m.Metrics) > 0
 }
 
-func (m *MetricEvent) Add(ele interface{}) interfaces.Event {
+func (m *MetricEvent) Add(ele interface{}) Event {
 	metric, ok := ele.(Metric)
 	if ok {
 		m.Metrics = append(m.Metrics, metric)
