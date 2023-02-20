@@ -6,6 +6,15 @@ import (
 	"time"
 )
 
+const (
+	INFO = iota
+	WARN
+	ERROR
+
+	TRACE = -2
+	DEBUG = -1
+)
+
 // FBConfig exposes advanced configuration options for the FBClient
 //		config = FBConfig{Offline: true}
 type FBConfig struct {
@@ -31,6 +40,8 @@ type FBConfig struct {
 	//
 	// Depending on the implementation, the factory may be a builder that allows you to set other configuration options as well.
 	InsightProcessorFactory InsightProcessorFactory
+	// LogLevel FeaBit log level
+	LogLevel int
 }
 
 // DefaultFBConfig FeatBit default configuration
@@ -41,4 +52,5 @@ var DefaultFBConfig *FBConfig = &FBConfig{
 	DataStorageFactory:      factories.NewInMemoryStorageBuilder(),
 	DataSynchronizerFactory: factories.NewStreamingBuilder(),
 	InsightProcessorFactory: factories.NewInsightProcessorBuilder(),
+	LogLevel:                ERROR,
 }
