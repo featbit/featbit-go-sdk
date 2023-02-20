@@ -23,11 +23,13 @@ type FBConfig struct {
 	// allows you to set other configuration options as well.
 	DataStorageFactory DataStorageFactory
 	// DataSynchronizerFactory a factory object which sets the implementation of the interfaces.DataSynchronizer that receives feature flag data
-	// from feature flag center, using a factory object. Depending on the implementation, the factory may be a builder that
-	// allows you to set other configuration options as well.
+	// from feature flag center.
+	//
+	// Depending on the implementation, the factory may be a builder that allows you to set other configuration options as well.
 	DataSynchronizerFactory DataSynchronizerFactory
-	// InsightProcessorFactory a factory object which sets the implementation of interfaces.InsightProcessor to be used for processing analytics events,
-	// using a factory object. Depending on the implementation, the factory may be a builder that allows you to set other configuration options as well.
+	// InsightProcessorFactory a factory object which sets the implementation of interfaces.InsightProcessor to be used for processing analytics events.
+	//
+	// Depending on the implementation, the factory may be a builder that allows you to set other configuration options as well.
 	InsightProcessorFactory InsightProcessorFactory
 }
 

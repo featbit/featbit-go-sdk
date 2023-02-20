@@ -43,6 +43,11 @@ func (n *NetworkBuilder) ReadTime(readTimeout time.Duration) *NetworkBuilder {
 	return n
 }
 
+func (n *NetworkBuilder) ProxyURL(proxy string) *NetworkBuilder {
+	n.proxyURL = proxy
+	return n
+}
+
 func (n *NetworkBuilder) CaCert(caRoot string) *NetworkBuilder {
 	n.caCert = caRoot
 	return n
