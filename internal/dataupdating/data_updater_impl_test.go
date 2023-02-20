@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/featbit/featbit-go-sdk/interfaces"
 	"github.com/featbit/featbit-go-sdk/internal/datastorage"
-	"github.com/featbit/featbit-go-sdk/internal/mocks"
 	"github.com/featbit/featbit-go-sdk/internal/types/data"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -17,7 +16,7 @@ func TestInit(t *testing.T) {
 	items := map[string]interfaces.Item{item1.GetId(): item1}
 	all := map[interfaces.Category]map[string]interfaces.Item{data.Datatests: items}
 	t.Run("init", func(t *testing.T) {
-		dataStorage := mocks.NewMockDataStorage(datastorage.NewInMemoryDataStorage())
+		dataStorage := datastorage.NewMockDataStorage(datastorage.NewInMemoryDataStorage())
 		dataUpdater := NewDataUpdaterImpl(dataStorage)
 		ok := dataUpdater.Init(all, int64(1))
 		if ok {
@@ -31,7 +30,7 @@ func TestInit(t *testing.T) {
 		assert.Equal(t, item1, item)
 	})
 	t.Run("initWithError", func(t *testing.T) {
-		mockDataStorage := mocks.NewMockDataStorage(datastorage.NewInMemoryDataStorage())
+		mockDataStorage := datastorage.NewMockDataStorage(datastorage.NewInMemoryDataStorage())
 		mockDataStorage.SetErr(fmt.Errorf("fake error"))
 		dataUpdater := NewDataUpdaterImpl(mockDataStorage)
 		ok := dataUpdater.Init(all, int64(1))
@@ -44,7 +43,7 @@ func TestInit(t *testing.T) {
 
 func TestUpsert(t *testing.T) {
 	t.Run("upsert", func(t *testing.T) {
-		dataStorage := mocks.NewMockDataStorage(datastorage.NewInMemoryDataStorage())
+		dataStorage := datastorage.NewMockDataStorage(datastorage.NewInMemoryDataStorage())
 		dataUpdater := NewDataUpdaterImpl(dataStorage)
 		ok := dataUpdater.Upsert(data.Datatests, item1.GetId(), item1, int64(1))
 		if ok {
@@ -58,7 +57,7 @@ func TestUpsert(t *testing.T) {
 		assert.Equal(t, item1, item)
 	})
 	t.Run("upsertWithError", func(t *testing.T) {
-		mockDataStorage := mocks.NewMockDataStorage(datastorage.NewInMemoryDataStorage())
+		mockDataStorage := datastorage.NewMockDataStorage(datastorage.NewInMemoryDataStorage())
 		mockDataStorage.SetErr(fmt.Errorf("fake error"))
 		dataUpdater := NewDataUpdaterImpl(mockDataStorage)
 		ok := dataUpdater.Upsert(data.Datatests, item1.GetId(), item1, int64(1))

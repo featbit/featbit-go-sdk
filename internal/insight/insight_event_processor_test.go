@@ -5,7 +5,6 @@ import (
 	"fmt"
 	. "github.com/featbit/featbit-go-sdk/interfaces"
 	"github.com/featbit/featbit-go-sdk/internal"
-	"github.com/featbit/featbit-go-sdk/internal/mocks"
 	"github.com/featbit/featbit-go-sdk/internal/types/insight"
 	"github.com/stretchr/testify/assert"
 	"sync"
@@ -33,14 +32,14 @@ var f = func(bytes []byte) []Event {
 
 func TestInsightProcessor(t *testing.T) {
 	t.Run("start and close", func(t *testing.T) {
-		sender := mocks.NewMockSender()
+		sender := NewMockSender()
 		insightProcessor := NewEventProcessor(ctx, sender, 100, 100*time.Millisecond)
 		_, ok := sender.GetLatestSendingInfo(200 * time.Millisecond)
 		assert.False(t, ok)
 		_ = insightProcessor.Close()
 	})
 	t.Run("start and close if sender error on close", func(t *testing.T) {
-		sender := mocks.NewMockSender()
+		sender := NewMockSender()
 		sender.SetCloseErr(fmt.Errorf("fake error"))
 		insightProcessor := NewEventProcessor(ctx, sender, 100, 100*time.Millisecond)
 		_, ok := sender.GetLatestSendingInfo(200 * time.Millisecond)
@@ -48,7 +47,7 @@ func TestInsightProcessor(t *testing.T) {
 		_ = insightProcessor.Close()
 	})
 	t.Run("send events and auto flush", func(t *testing.T) {
-		sender := mocks.NewMockSender()
+		sender := NewMockSender()
 		sender.SetParseJson(f)
 		insightProcessor := NewEventProcessor(ctx, sender, 100, 100*time.Millisecond)
 		insightProcessor.Send(insight.NewUserEvent(insight.ConvertFBUserToEventUser(&user1)))
@@ -63,7 +62,7 @@ func TestInsightProcessor(t *testing.T) {
 		_ = insightProcessor.Close()
 	})
 	t.Run("send events and manuel flush", func(t *testing.T) {
-		sender := mocks.NewMockSender()
+		sender := NewMockSender()
 		sender.SetParseJson(f)
 		insightProcessor := NewEventProcessor(ctx, sender, 100, 100*time.Millisecond)
 		insightProcessor.Send(insight.NewUserEvent(insight.ConvertFBUserToEventUser(&user1)))
@@ -81,7 +80,7 @@ func TestInsightProcessor(t *testing.T) {
 
 	})
 	t.Run("still work even if error in sending", func(t *testing.T) {
-		sender := mocks.NewMockSender()
+		sender := NewMockSender()
 		sender.SetParseJson(f)
 		sender.SetErr(fmt.Errorf("fake err"))
 		insightProcessor := NewEventProcessor(ctx, sender, 100, 100*time.Millisecond)
@@ -97,7 +96,7 @@ func TestInsightProcessor(t *testing.T) {
 		_ = insightProcessor.Close()
 	})
 	t.Run("can't send anything after close", func(t *testing.T) {
-		sender := mocks.NewMockSender()
+		sender := NewMockSender()
 		sender.SetParseJson(f)
 		insightProcessor := NewEventProcessor(ctx, sender, 100, 100*time.Millisecond)
 		_ = insightProcessor.Close()
@@ -109,7 +108,7 @@ func TestInsightProcessor(t *testing.T) {
 	t.Run("event keeping in buffer if all flush workers are busy", func(t *testing.T) {
 		waitGroup := &sync.WaitGroup{}
 		waitGroup.Add(5)
-		sender := mocks.NewMockSender()
+		sender := NewMockSender()
 		sender.SetWaitGroup(waitGroup)
 		sender.SetParseJson(f)
 		sender.MustWait()

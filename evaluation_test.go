@@ -2,7 +2,7 @@ package featbit
 
 import (
 	"github.com/featbit/featbit-go-sdk/interfaces"
-	"github.com/featbit/featbit-go-sdk/internal/mocks"
+	"github.com/featbit/featbit-go-sdk/internal/datastorage"
 	"github.com/featbit/featbit-go-sdk/internal/types/data"
 	"github.com/featbit/featbit-go-sdk/internal/types/insight"
 	"github.com/stretchr/testify/assert"
@@ -36,8 +36,8 @@ var flag *data.FeatureFlag
 var eval *evaluator
 
 func init() {
-	dataStorage, _ := mocks.NewMockDataStorageBuilder().CreateDataStorage(nil)
-	mockDataStorage := dataStorage.(*mocks.MockDataStorage)
+	dataStorage, _ := datastorage.NewMockDataStorageBuilder().CreateDataStorage(nil)
+	mockDataStorage := dataStorage.(*datastorage.MockDataStorage)
 	_ = mockDataStorage.LoadData()
 
 	getFlag := func(key string) *data.FeatureFlag {

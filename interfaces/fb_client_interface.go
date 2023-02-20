@@ -7,16 +7,24 @@ import (
 // FBEvaluation defines the basic feature flag evaluation methods implemented by FBClient.
 type FBEvaluation interface {
 	// Variation calculates the value of a feature flag for a given user,
-	// return the variation for the given user, or defaultValue if the flag is disabled or an error occurs;
+	// return a string variation for the given user, or defaultValue if the flag is disabled or an error occurs;
 	// the details that explains how the flag value is explained and the error if any.
 	Variation(featureFlagKey string, user FBUser, defaultValue string) (string, EvalDetail, error)
-
+	// BoolVariation calculates the value of a feature flag for a given user,
+	// return a bool variation for the given user, or defaultValue if the flag is disabled or an error occurs;
+	// the details that explains how the flag value is explained and the error if any.
 	BoolVariation(featureFlagKey string, user FBUser, defaultValue bool) (bool, EvalDetail, error)
-
+	// IntVariation calculates the value of a feature flag for a given user,
+	// return an int variation for the given user, or defaultValue if the flag is disabled or an error occurs;
+	// the details that explains how the flag value is explained and the error if any.
 	IntVariation(featureFlagKey string, user FBUser, defaultValue int) (int, EvalDetail, error)
-
+	// DoubleVariation calculates the value of a feature flag for a given user,
+	// return a float variation for the given user, or defaultValue if the flag is disabled or an error occurs;
+	// the details that explains how the flag value is explained and the error if any.
 	DoubleVariation(featureFlagKey string, user FBUser, defaultValue float64) (float64, EvalDetail, error)
-
+	// JsonVariation calculates the value of a feature flag for a given user,
+	// return a json object variation for the given user, or defaultValue if the flag is disabled or an error occurs;
+	// the details that explains how the flag value is explained and the error if any.
 	JsonVariation(featureFlagKey string, user FBUser, defaultValue interface{}) (interface{}, EvalDetail, error)
 
 	// AllLatestFlagsVariations returns a list of all feature flags value with details for a given user, including the reason

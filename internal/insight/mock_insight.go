@@ -1,8 +1,7 @@
-package mocks
+package insight
 
 import (
 	. "github.com/featbit/featbit-go-sdk/interfaces"
-	"github.com/featbit/featbit-go-sdk/internal/insight"
 	"sync"
 	"time"
 )
@@ -131,5 +130,5 @@ func NewMockInsightProcessorFactory(sender *MockSender, capacity int, flushInter
 }
 
 func (m *MockInsightProcessorFactory) CreateInsightProcessor(ctx Context) (InsightProcessor, error) {
-	return insight.NewEventProcessor(ctx, m.sender, m.capacity, m.flushInterval), nil
+	return NewEventProcessor(ctx, m.sender, m.capacity, m.flushInterval), nil
 }

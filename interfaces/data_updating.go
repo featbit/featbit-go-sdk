@@ -44,18 +44,29 @@ const (
 	OFF StateType = "OFF"
 )
 
+// ErrorTrack tracks the error status of the DataSynchronizer
 type ErrorTrack struct {
+	// ErrorType is the general category of the error
 	ErrorType string
-	Message   string
+	// Message  is the additional human-readable information relevant to the error
+	Message string
 }
 
 func (et ErrorTrack) String() string {
 	return fmt.Sprintf(`{"errorType": "%s", "message": "%s"}`, et.ErrorType, et.Message)
 }
 
+// State is information about the DataSynchronizer status and the last status change
 type State struct {
-	StateType  StateType
+	// StateType represents the overall current state of the DataSynchronizer.
+	//
+	// It will always be one of the StateType constants such as OK.
+	StateType StateType
+	// StateSince is the time that the value of State most recently changed.
 	StateSince time.Time
+	// ErrorTrack is information about the last error that the data source encountered, if any.
+	//
+	// If no error has ever occurred, this field will be an empty ErrorTrack{}
 	ErrorTrack ErrorTrack
 }
 
@@ -64,26 +75,42 @@ func (s State) String() string {
 	return fmt.Sprintf(`{"stateType": "%s", "stateSince": "%s", "errorTrace": %s}`, s.StateType, timeStr, s.ErrorTrack)
 }
 
+// INITIALIZINGState it is the time that the SDK started initializing, without any error
 func INITIALIZINGState() State {
 	return State{INITIALIZING, time.Now(), ErrorTrack{}}
 }
 
+// OKState it is the time that SDK most recently entered a valid state,
+// after previously having been either Initializing or Interrupted.
+//
+// There is no error in the OK state
 func OKState() State {
 	return State{OK, time.Now(), ErrorTrack{}}
 }
 
+// INTERRUPTEDState it is the time that the DataSynchronizer most recently entered an
+// error state, after previously having been Valid.
 func INTERRUPTEDState(errorType string, message string) State {
 	return State{INTERRUPTED, time.Now(), ErrorTrack{errorType, message}}
 }
 
+// ErrorOFFState it is the time that the DataSynchronizer encountered an unrecoverable error
 func ErrorOFFState(errorType string, message string) State {
 	return State{OFF, time.Now(), ErrorTrack{errorType, message}}
 }
 
+// NormalOFFState it is the time that the DataSynchronizer was explicitly shut down without any error
 func NormalOFFState() State {
 	return State{OFF, time.Now(), ErrorTrack{}}
 }
 
+// DataUpdater interface that DataSynchronizer implementation will use to push data into the SDK.
+//
+// The DataSynchronizer interacts with this object, rather than manipulating the DataStorage directly,
+// so that the SDK can perform any other necessary operations that should perform around data updating.
+//
+// If you overwrite our default DataSynchronizer, you should integrate DataUpdater to push data
+// and maintain your DataSynchronizer status in your own code, but note that the implementation of this interface is not public
 type DataUpdater interface {
 	// Init overwrites the storage with a set of items for each collection, if the new version > the old one
 	// If the underlying data storage returns an error during this operation, the SDK will take it, log it,
@@ -115,10 +142,15 @@ type DataUpdater interface {
 	UpdateStatus(state State)
 }
 
+// DataUpdateStatusProvider interface to query the status of a DataSynchronizer
+//
+// With the build-in implementation, this might be useful if you want to use SDK without waiting for it to initialize
+//
+// DataUpdateStatusProvider.WaitFor is used to halt SDK until a desired state comes
 type DataUpdateStatusProvider interface {
 	io.Closer
 	// GetCurrentState returns the current status of the DataSynchronizer
-	// All of the DataSynchronizer implementations are guaranteed to update this status
+	// All the DataSynchronizer implementations are guaranteed to update this status
 	// whenever they successfully initialize, encounter an error, or recover after an error.
 	// For a custom implementation, it is the responsibility of the DataSynchronizer to report its status via DataUpdater,
 	// if it does not do so, the status will always be reported as INITIALIZING.

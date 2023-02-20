@@ -15,6 +15,7 @@ const (
 	DefaultRetryTimes    = 1
 )
 
+// InsightProcessorBuilder factory to create default implementation of interfaces.InsightProcessor
 type InsightProcessorBuilder struct {
 	capacity      int
 	flushInterval time.Duration
@@ -22,6 +23,7 @@ type InsightProcessorBuilder struct {
 	maxRetryTimes int
 }
 
+// NewInsightProcessorBuilder creates an instance of InsightProcessorBuilder
 func NewInsightProcessorBuilder() *InsightProcessorBuilder {
 	return &InsightProcessorBuilder{
 		capacity:      DefaultCapacity,
@@ -31,6 +33,7 @@ func NewInsightProcessorBuilder() *InsightProcessorBuilder {
 	}
 }
 
+// Capacity sets the inbox capacity
 func (i *InsightProcessorBuilder) Capacity(capacity int) *InsightProcessorBuilder {
 	if capacity <= 0 {
 		i.capacity = DefaultCapacity
@@ -40,6 +43,7 @@ func (i *InsightProcessorBuilder) Capacity(capacity int) *InsightProcessorBuilde
 	return i
 }
 
+// FlushInterval sets the interval of flush message
 func (i *InsightProcessorBuilder) FlushInterval(flushInterval time.Duration) *InsightProcessorBuilder {
 	if flushInterval <= 0 {
 		i.flushInterval = DefaultFlushInterval
@@ -49,6 +53,7 @@ func (i *InsightProcessorBuilder) FlushInterval(flushInterval time.Duration) *In
 	return i
 }
 
+// RetryInterval sets the time to wait for next retry if the last sending events failed
 func (i *InsightProcessorBuilder) RetryInterval(retryInterval time.Duration) *InsightProcessorBuilder {
 	if retryInterval <= 0 {
 		i.retryInterval = DefaultRetryDelay
@@ -58,6 +63,7 @@ func (i *InsightProcessorBuilder) RetryInterval(retryInterval time.Duration) *In
 	return i
 }
 
+// MaxRetryTimes sets max retry times for a failed event sending
 func (i *InsightProcessorBuilder) MaxRetryTimes(maxRetryTimes int) *InsightProcessorBuilder {
 	if maxRetryTimes <= 0 {
 		i.maxRetryTimes = DefaultRetryTimes
@@ -67,6 +73,7 @@ func (i *InsightProcessorBuilder) MaxRetryTimes(maxRetryTimes int) *InsightProce
 	return i
 }
 
+// CreateInsightProcessor creates an instance of interfaces.InsightProcessor
 func (i *InsightProcessorBuilder) CreateInsightProcessor(context Context) (InsightProcessor, error) {
 	sender, err := i.CreateInsightEventSender(context)
 	if err != nil {
@@ -83,6 +90,7 @@ func (i *InsightProcessorBuilder) CreateInsightProcessor(context Context) (Insig
 	return insight.NewEventProcessor(context, sender, capacity, flushInterval), nil
 }
 
+// CreateInsightEventSender creates an instance of interfaces.Sender
 func (i *InsightProcessorBuilder) CreateInsightEventSender(context Context) (Sender, error) {
 	network := context.GetNetwork()
 	client, ok := network.GetHTTPClient().(*http.Client)

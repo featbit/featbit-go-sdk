@@ -1,4 +1,4 @@
-package mocks
+package datasynchronization
 
 import (
 	"encoding/json"

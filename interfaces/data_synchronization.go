@@ -16,6 +16,6 @@ type DataSynchronizer interface {
 
 // DataSynchronizerFactory Interface for a factory that creates some implementation of DataSynchronizer
 type DataSynchronizerFactory interface {
-	// CreateDataSynchronizer creates an implementation instance.
+	// CreateDataSynchronizer creates an implementation instance of DataSynchronizer.
 	CreateDataSynchronizer(context Context, dataUpdater DataUpdater) (DataSynchronizer, error)
 }

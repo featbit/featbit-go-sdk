@@ -3,7 +3,6 @@ package dataupdating
 import (
 	"github.com/featbit/featbit-go-sdk/interfaces"
 	"github.com/featbit/featbit-go-sdk/internal/datastorage"
-	"github.com/featbit/featbit-go-sdk/internal/mocks"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -11,7 +10,7 @@ import (
 
 func TestWaitFor(t *testing.T) {
 	t.Run("already OK state", func(t *testing.T) {
-		dataStorage := mocks.NewMockDataStorage(datastorage.NewInMemoryDataStorage())
+		dataStorage := datastorage.NewMockDataStorage(datastorage.NewInMemoryDataStorage())
 		dataUpdater := NewDataUpdaterImpl(dataStorage)
 		dataUpdateStatusProvider := NewDataUpdateStatusProviderImpl(dataUpdater)
 
@@ -19,7 +18,7 @@ func TestWaitFor(t *testing.T) {
 		assert.True(t, dataUpdateStatusProvider.WaitFor(interfaces.OK, 100*time.Millisecond))
 	})
 	t.Run("wait for ok", func(t *testing.T) {
-		dataStorage := mocks.NewMockDataStorage(datastorage.NewInMemoryDataStorage())
+		dataStorage := datastorage.NewMockDataStorage(datastorage.NewInMemoryDataStorage())
 		dataUpdater := NewDataUpdaterImpl(dataStorage)
 		dataUpdateStatusProvider := NewDataUpdateStatusProviderImpl(dataUpdater)
 		go func() {
@@ -33,13 +32,13 @@ func TestWaitFor(t *testing.T) {
 		assert.True(t, duration >= 50*time.Millisecond)
 	})
 	t.Run("wait for ok but time out", func(t *testing.T) {
-		dataStorage := mocks.NewMockDataStorage(datastorage.NewInMemoryDataStorage())
+		dataStorage := datastorage.NewMockDataStorage(datastorage.NewInMemoryDataStorage())
 		dataUpdater := NewDataUpdaterImpl(dataStorage)
 		dataUpdateStatusProvider := NewDataUpdateStatusProviderImpl(dataUpdater)
 		assert.False(t, dataUpdateStatusProvider.WaitFor(interfaces.OK, 10*time.Millisecond))
 	})
 	t.Run("wait for ok but off comes", func(t *testing.T) {
-		dataStorage := mocks.NewMockDataStorage(datastorage.NewInMemoryDataStorage())
+		dataStorage := datastorage.NewMockDataStorage(datastorage.NewInMemoryDataStorage())
 		dataUpdater := NewDataUpdaterImpl(dataStorage)
 		dataUpdateStatusProvider := NewDataUpdateStatusProviderImpl(dataUpdater)
 		go func() {

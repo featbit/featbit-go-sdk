@@ -10,11 +10,17 @@ type Category interface {
 	GetTag() string
 }
 
+// Item interface for the object to represent a versioned/timestamped data
 type Item interface {
+	// GetId returns the unique id
 	GetId() string
+	// IsArchived returns true if object is archived
 	IsArchived() bool
+	// GetTimestamp returns the version/timestamp of the object
 	GetTimestamp() int64
+	// GetType returns the type of versioned/timestamped object
 	GetType() int
+	// ToArchivedItem converts to an archived item
 	ToArchivedItem() Item
 }
 

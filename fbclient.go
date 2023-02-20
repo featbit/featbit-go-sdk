@@ -102,7 +102,7 @@ func NewFBClient(envSecret string, streamingUrl string, eventUrl string) (*FBCli
 //         // do whatever is appropriate if initialization has timed out
 //     }
 //
-// If you set FBConfig.StartWait to **zero**, the function will return immediately after creating the client instance, and do any further initialization in the background.
+// If you set FBConfig.StartWait to zero, the function will return immediately after creating the client instance, and do any further initialization in the background.
 //
 //     client, _ := featbit.MakeCustomFBClient(envSecret, streamingUrl, eventUrl, config)
 //
@@ -405,6 +405,11 @@ func (client *FBClient) evaluateDetail(featureFlagKey string, user *FBUser, requ
 	return er.castVariationByFlagType(requiredType, defaultValue)
 }
 
+// Variation calculates the value of a feature flag for a given user,
+// return a string variation for the given user, or defaultValue if the flag is disabled or an error occurs;
+// the details that explains how the flag value is explained and the error if any.
+//
+// The method sends insight events back to feature flag center
 func (client *FBClient) Variation(featureFlagKey string, user FBUser, defaultValue string) (string, EvalDetail, error) {
 	ed, err := client.evaluateDetail(featureFlagKey, &user, FlagStringType, defaultValue)
 	if err != nil {
@@ -414,6 +419,11 @@ func (client *FBClient) Variation(featureFlagKey string, user FBUser, defaultVal
 	return ret, ed, nil
 }
 
+// BoolVariation calculates the value of a feature flag for a given user,
+// return a bool variation for the given user, or defaultValue if the flag is disabled or an error occurs;
+// the details that explains how the flag value is explained and the error if any.
+//
+// The method sends insight events back to feature flag center
 func (client *FBClient) BoolVariation(featureFlagKey string, user FBUser, defaultValue bool) (bool, EvalDetail, error) {
 	ed, err := client.evaluateDetail(featureFlagKey, &user, FlagBoolType, defaultValue)
 	if err != nil {
@@ -423,6 +433,11 @@ func (client *FBClient) BoolVariation(featureFlagKey string, user FBUser, defaul
 	return ret, ed, nil
 }
 
+// IntVariation calculates the value of a feature flag for a given user,
+// return an int variation for the given user, or defaultValue if the flag is disabled or an error occurs;
+// the details that explains how the flag value is explained and the error if any.
+//
+// The method sends insight events back to feature flag center
 func (client *FBClient) IntVariation(featureFlagKey string, user FBUser, defaultValue int) (int, EvalDetail, error) {
 	ed, err := client.evaluateDetail(featureFlagKey, &user, FlagNumericType, defaultValue)
 	if err != nil {
@@ -432,6 +447,11 @@ func (client *FBClient) IntVariation(featureFlagKey string, user FBUser, default
 	return ret, ed, nil
 }
 
+// DoubleVariation calculates the value of a feature flag for a given user,
+// return a float variation for the given user, or defaultValue if the flag is disabled or an error occurs;
+// the details that explains how the flag value is explained and the error if any.
+//
+// The method sends insight events back to feature flag center
 func (client *FBClient) DoubleVariation(featureFlagKey string, user FBUser, defaultValue float64) (float64, EvalDetail, error) {
 	ed, err := client.evaluateDetail(featureFlagKey, &user, FlagNumericType, defaultValue)
 	if err != nil {
@@ -441,6 +461,11 @@ func (client *FBClient) DoubleVariation(featureFlagKey string, user FBUser, defa
 	return ret, ed, nil
 }
 
+// JsonVariation calculates the value of a feature flag for a given user,
+// return a json object variation for the given user, or defaultValue if the flag is disabled or an error occurs;
+// the details that explains how the flag value is explained and the error if any.
+//
+// The method sends insight events back to feature flag center
 func (client *FBClient) JsonVariation(featureFlagKey string, user FBUser, defaultValue interface{}) (interface{}, EvalDetail, error) {
 	ed, err := client.evaluateDetail(featureFlagKey, &user, FlagJsonType, defaultValue)
 	if err != nil {
@@ -449,6 +474,13 @@ func (client *FBClient) JsonVariation(featureFlagKey string, user FBUser, defaul
 	return ed.Variation, ed, nil
 }
 
+// AllLatestFlagsVariations returns a list of all feature flags value with details for a given user, including the reason
+// describes the way the value was determined.
+//
+// The return type AllFlagState could be used as a cache that provides the flag value to a client side sdk or a front-end app.
+// See more details in AllFlagState.
+//
+// This method does not send insight events back to feature flag center. See interfaces.AllFlagState
 func (client *FBClient) AllLatestFlagsVariations(user FBUser) (AllFlagState, error) {
 	if !client.IsInitialized() {
 		log.LogWarn("FB GO SDK: evaluation is called before GO SDK client is initialized for feature flag, well using the default value")
@@ -493,6 +525,9 @@ func (client *FBClient) AllLatestFlagsVariations(user FBUser) (AllFlagState, err
 	return ret, nil
 }
 
+// InitializeFromExternalJson initializes FeatBit client in the offline mode
+//
+// Return false if the json can't be parsed or client is not in the offline mode
 func (client *FBClient) InitializeFromExternalJson(jsonStr string) (bool, error) {
 	if client.offline && jsonStr != "" {
 		var all data.All
