@@ -116,6 +116,8 @@ func NewFBClient(envSecret string, streamingUrl string, eventUrl string) (*FBCli
 // an invalid configuration. This is rare, but could happen if for example you specified a custom TLS
 // certificate file that did not load a valid certificate, you inputted an invalid env secret key, etc...
 func MakeCustomFBClient(envSecret string, streamingUrl string, eventUrl string, config FBConfig) (*FBClient, error) {
+	logger := &log.SimpleLogger{Level: config.LogLevel}
+	log.SetLogger(logger)
 	if !config.Offline {
 		if !util.IsEnvSecretValid(envSecret) {
 			return nil, envSecretInvalid
