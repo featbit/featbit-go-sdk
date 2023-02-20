@@ -25,6 +25,7 @@ const (
 	invalidRequestClose               = 4003
 	invalidRequestCloseReason         = "invalid request"
 	CloseAndThenReconnByDatasyncError = "data sync error"
+	invalidUrl                        = "malformed ws or wss URL"
 )
 
 var (
@@ -276,7 +277,15 @@ func (s *Streaming) connectRoutine() {
 		url := fmt.Sprintf(urlFormat, token)
 		conn, resp, err := dialer.Dial(url, network.GetHeaders(nil))
 		if err != nil {
-			log.LogDebug("Err in connecting ws server, http code = %v", resp.StatusCode)
+			if resp != nil {
+				log.LogDebug("Err in connecting ws server, http code = %v", resp.StatusCode)
+			}
+			if err.Error() == invalidUrl {
+				log.LogError("FB GO SDK: invalid url: %s", streamingUri)
+				s.dataUpdater.UpdateStatus(ErrorOFFState(NetworkError, err.Error()))
+				s.noMoreReconnect()
+				return
+			}
 			if _, ok := err.(*net.DNSError); ok {
 				log.LogError("FB GO SDK: Host unknown: %s", err.Error())
 				s.dataUpdater.UpdateStatus(ErrorOFFState(NetworkError, err.Error()))
