@@ -1,0 +1,767 @@
+{
+  "messageType": "data-sync",
+  "data": {
+    "eventType": "full",
+    "featureFlags": [
+      {
+        "envId": "41e260d6-83e3-4cfe-943e-ef6cd83401bb",
+        "name": "ff-test-seg",
+        "key": "ff-test-seg",
+        "variationType": "string",
+        "variations": [
+          {
+            "id": "3f8e09d3-3e2f-406c-8a8b-ebf6e5f96307",
+            "value": "teamA"
+          },
+          {
+            "id": "f62a3eae-e47f-481c-83eb-1b8fb3c39c9b",
+            "value": "teamB"
+          }
+        ],
+        "targetUsers": [],
+        "rules": [
+          {
+            "id": "cf1ca836-a4ef-422e-8996-931aecd248a2",
+            "name": "segment rule",
+            "dispatchKey": null,
+            "includedInExpt": false,
+            "conditions": [
+              {
+                "property": "User is in segment",
+                "op": null,
+                "value": "[\u0022a0832b1c-fe73-479f-9a30-af8f003c34bf\u0022]"
+              }
+            ],
+            "variations": [
+              {
+                "id": "3f8e09d3-3e2f-406c-8a8b-ebf6e5f96307",
+                "rollout": [
+                  0,
+                  1
+                ],
+                "exptRollout": 1
+              }
+            ]
+          }
+        ],
+        "isEnabled": true,
+        "disabledVariationId": "f62a3eae-e47f-481c-83eb-1b8fb3c39c9b",
+        "fallthrough": {
+          "dispatchKey": null,
+          "includedInExpt": true,
+          "variations": [
+            {
+              "id": "f62a3eae-e47f-481c-83eb-1b8fb3c39c9b",
+              "rollout": [
+                0,
+                1
+              ],
+              "exptRollout": 1
+            }
+          ]
+        },
+        "exptIncludeAllTargets": true,
+        "tags": [],
+        "isArchived": false,
+        "disabledVariation": {
+          "id": "f62a3eae-e47f-481c-83eb-1b8fb3c39c9b",
+          "value": "teamB"
+        },
+        "creatorId": "a74cf89d-b855-492a-a3d7-9a8cd6d852aa",
+        "updatorId": "a74cf89d-b855-492a-a3d7-9a8cd6d852aa",
+        "createdAt": "2023-01-19T03:46:13.598Z",
+        "updatedAt": "2023-01-19T07:49:19.642555Z",
+        "id": "74038447-9dcb-4ee1-a77c-af8f003e228f"
+      },
+      {
+        "envId": "41e260d6-83e3-4cfe-943e-ef6cd83401bb",
+        "name": "ff-test-bool",
+        "key": "ff-test-bool",
+        "variationType": "boolean",
+        "variations": [
+          {
+            "id": "18b369f8-453f-46d7-88cc-fe41d29ca6e3",
+            "value": "true"
+          },
+          {
+            "id": "43a1b83b-18df-42a6-971c-b2518455d8f2",
+            "value": "false"
+          }
+        ],
+        "targetUsers": [
+          {
+            "keyIds": [
+              "test-user-1",
+              "test-user-2"
+            ],
+            "variationId": "18b369f8-453f-46d7-88cc-fe41d29ca6e3"
+          }
+        ],
+        "rules": [],
+        "isEnabled": true,
+        "disabledVariationId": "43a1b83b-18df-42a6-971c-b2518455d8f2",
+        "fallthrough": {
+          "dispatchKey": "name",
+          "includedInExpt": true,
+          "variations": [
+            {
+              "id": "18b369f8-453f-46d7-88cc-fe41d29ca6e3",
+              "rollout": [
+                0,
+                0.5
+              ],
+              "exptRollout": 1
+            },
+            {
+              "id": "43a1b83b-18df-42a6-971c-b2518455d8f2",
+              "rollout": [
+                0.5,
+                1
+              ],
+              "exptRollout": 1
+            }
+          ]
+        },
+        "exptIncludeAllTargets": true,
+        "tags": [],
+        "isArchived": false,
+        "disabledVariation": {
+          "id": "43a1b83b-18df-42a6-971c-b2518455d8f2",
+          "value": "false"
+        },
+        "creatorId": "a74cf89d-b855-492a-a3d7-9a8cd6d852aa",
+        "updatorId": "a74cf89d-b855-492a-a3d7-9a8cd6d852aa",
+        "createdAt": "2023-01-19T08:02:25.731Z",
+        "updatedAt": "2023-01-19T08:04:54.3264271Z",
+        "id": "f36d3f1c-8ce1-4801-a248-af8f008480c7"
+      },
+      {
+        "envId": "41e260d6-83e3-4cfe-943e-ef6cd83401bb",
+        "name": "ff-test-number",
+        "key": "ff-test-number",
+        "variationType": "number",
+        "variations": [
+          {
+            "id": "3eb2c8db-9654-4945-9f66-b371c4927ef3",
+            "value": "1"
+          },
+          {
+            "id": "3e9d31c3-d4a7-4b2c-9d5a-979bd31e1280",
+            "value": "33"
+          },
+          {
+            "id": "a1f5333f-5137-485c-9fe1-267e142ca014",
+            "value": "86"
+          },
+          {
+            "id": "d1192640-dd82-4dbe-823e-88d7794b94ee",
+            "value": "9999"
+          }
+        ],
+        "targetUsers": [],
+        "rules": [
+          {
+            "id": "41402f94-64c9-4aca-9016-58a019a917c9",
+            "name": "USA",
+            "dispatchKey": null,
+            "includedInExpt": false,
+            "conditions": [
+              {
+                "property": "country",
+                "op": "Equal",
+                "value": "us"
+              }
+            ],
+            "variations": [
+              {
+                "id": "3eb2c8db-9654-4945-9f66-b371c4927ef3",
+                "rollout": [
+                  0,
+                  1
+                ],
+                "exptRollout": 1
+              }
+            ]
+          },
+          {
+            "id": "5a92deed-68db-4dc5-a8d1-721a275180c5",
+            "name": "FRANCE",
+            "dispatchKey": null,
+            "includedInExpt": false,
+            "conditions": [
+              {
+                "property": "country",
+                "op": "Equal",
+                "value": "fr"
+              }
+            ],
+            "variations": [
+              {
+                "id": "3e9d31c3-d4a7-4b2c-9d5a-979bd31e1280",
+                "rollout": [
+                  0,
+                  1
+                ],
+                "exptRollout": 1
+              }
+            ]
+          },
+          {
+            "id": "5e0a88cd-7117-4d1c-972b-7dc9e747dddc",
+            "name": "CHINA",
+            "dispatchKey": null,
+            "includedInExpt": false,
+            "conditions": [
+              {
+                "property": "country",
+                "op": "Equal",
+                "value": "cn"
+              }
+            ],
+            "variations": [
+              {
+                "id": "a1f5333f-5137-485c-9fe1-267e142ca014",
+                "rollout": [
+                  0,
+                  1
+                ],
+                "exptRollout": 1
+              }
+            ]
+          }
+        ],
+        "isEnabled": true,
+        "disabledVariationId": "d1192640-dd82-4dbe-823e-88d7794b94ee",
+        "fallthrough": {
+          "dispatchKey": null,
+          "includedInExpt": true,
+          "variations": [
+            {
+              "id": "d1192640-dd82-4dbe-823e-88d7794b94ee",
+              "rollout": [
+                0,
+                1
+              ],
+              "exptRollout": 1
+            }
+          ]
+        },
+        "exptIncludeAllTargets": true,
+        "tags": [],
+        "isArchived": false,
+        "disabledVariation": {
+          "id": "d1192640-dd82-4dbe-823e-88d7794b94ee",
+          "value": "9999"
+        },
+        "creatorId": "a74cf89d-b855-492a-a3d7-9a8cd6d852aa",
+        "updatorId": "a74cf89d-b855-492a-a3d7-9a8cd6d852aa",
+        "createdAt": "2023-01-19T08:13:06.323Z",
+        "updatedAt": "2023-01-19T08:18:43.2724282Z",
+        "id": "7056b9d7-7ccb-40bd-b05d-af8f00876f79"
+      },
+      {
+        "envId": "41e260d6-83e3-4cfe-943e-ef6cd83401bb",
+        "name": "ff-test-string",
+        "key": "ff-test-string",
+        "variationType": "string",
+        "variations": [
+          {
+            "id": "24f54a44-985b-4628-95c3-4a7b946bd17a",
+            "value": "email"
+          },
+          {
+            "id": "57348136-4c9a-4640-8156-e15931119e81",
+            "value": "phone number"
+          },
+          {
+            "id": "c4ed60ff-d195-415d-a657-3243286673b7",
+            "value": "others"
+          }
+        ],
+        "targetUsers": [],
+        "rules": [
+          {
+            "id": "ed5843e7-0f38-4d61-9945-b7dad6694601",
+            "name": "Email",
+            "dispatchKey": null,
+            "includedInExpt": false,
+            "conditions": [
+              {
+                "property": "keyId",
+                "op": "MatchRegex",
+                "value": "^[a-zA-Z0-9_-]\u002B@[a-zA-Z0-9_-]\u002B(\\.[a-zA-Z0-9_-]\u002B)\u002B$"
+              }
+            ],
+            "variations": [
+              {
+                "id": "24f54a44-985b-4628-95c3-4a7b946bd17a",
+                "rollout": [
+                  0,
+                  1
+                ],
+                "exptRollout": 1
+              }
+            ]
+          },
+          {
+            "id": "08187230-7ad4-43c2-b830-b2d4269cecb1",
+            "name": "CN Phone Number",
+            "dispatchKey": null,
+            "includedInExpt": false,
+            "conditions": [
+              {
+                "property": "keyId",
+                "op": "MatchRegex",
+                "value": "^(\\\u002B?0?86\\-?)?1[345789]\\d{9}$"
+              }
+            ],
+            "variations": [
+              {
+                "id": "57348136-4c9a-4640-8156-e15931119e81",
+                "rollout": [
+                  0,
+                  1
+                ],
+                "exptRollout": 1
+              }
+            ]
+          },
+          {
+            "id": "3fea476d-fb36-4bd1-8615-1b607926f314",
+            "name": "FR Phone Number",
+            "dispatchKey": null,
+            "includedInExpt": false,
+            "conditions": [
+              {
+                "property": "keyId",
+                "op": "MatchRegex",
+                "value": "^(\\\u002B?33|0)[67]\\d{8}$"
+              }
+            ],
+            "variations": [
+              {
+                "id": "57348136-4c9a-4640-8156-e15931119e81",
+                "rollout": [
+                  0,
+                  1
+                ],
+                "exptRollout": 1
+              }
+            ]
+          }
+        ],
+        "isEnabled": true,
+        "disabledVariationId": "c4ed60ff-d195-415d-a657-3243286673b7",
+        "fallthrough": {
+          "dispatchKey": null,
+          "includedInExpt": true,
+          "variations": [
+            {
+              "id": "c4ed60ff-d195-415d-a657-3243286673b7",
+              "rollout": [
+                0,
+                1
+              ],
+              "exptRollout": 1
+            }
+          ]
+        },
+        "exptIncludeAllTargets": true,
+        "tags": [],
+        "isArchived": false,
+        "disabledVariation": {
+          "id": "c4ed60ff-d195-415d-a657-3243286673b7",
+          "value": "others"
+        },
+        "creatorId": "a74cf89d-b855-492a-a3d7-9a8cd6d852aa",
+        "updatorId": "a74cf89d-b855-492a-a3d7-9a8cd6d852aa",
+        "createdAt": "2023-01-19T08:20:48.851Z",
+        "updatedAt": "2023-01-19T08:28:13.5801109Z",
+        "id": "b8f0b85a-e654-437d-a9df-af8f00898d7f"
+      },
+      {
+        "envId": "41e260d6-83e3-4cfe-943e-ef6cd83401bb",
+        "name": "ff-test-json",
+        "key": "ff-test-json",
+        "variationType": "json",
+        "variations": [
+          {
+            "id": "255ee1b9-0290-4ffe-98f8-06c4b66f3608",
+            "value": "{\n    \u0022code\u0022: 200,\n    \u0022reason\u0022: \u0022you win 100 euros\u0022\n}"
+          },
+          {
+            "id": "0127cc87-99e2-4c46-98d9-5974a4fa1de1",
+            "value": "{\n    \u0022code\u0022: 404,\n    \u0022reason\u0022: \u0022fail to win the lottery\u0022\n}"
+          }
+        ],
+        "targetUsers": [],
+        "rules": [],
+        "isEnabled": true,
+        "disabledVariationId": "0127cc87-99e2-4c46-98d9-5974a4fa1de1",
+        "fallthrough": {
+          "dispatchKey": "name",
+          "includedInExpt": true,
+          "variations": [
+            {
+              "id": "255ee1b9-0290-4ffe-98f8-06c4b66f3608",
+              "rollout": [
+                0,
+                0.25
+              ],
+              "exptRollout": 1
+            },
+            {
+              "id": "0127cc87-99e2-4c46-98d9-5974a4fa1de1",
+              "rollout": [
+                0.25,
+                1
+              ],
+              "exptRollout": 1
+            }
+          ]
+        },
+        "exptIncludeAllTargets": true,
+        "tags": [],
+        "isArchived": false,
+        "disabledVariation": {
+          "id": "0127cc87-99e2-4c46-98d9-5974a4fa1de1",
+          "value": "{\n    \u0022code\u0022: 404,\n    \u0022reason\u0022: \u0022fail to win the lottery\u0022\n}"
+        },
+        "creatorId": "a74cf89d-b855-492a-a3d7-9a8cd6d852aa",
+        "updatorId": "a74cf89d-b855-492a-a3d7-9a8cd6d852aa",
+        "createdAt": "2023-01-19T08:31:58.919Z",
+        "updatedAt": "2023-01-19T08:34:54.9928114Z",
+        "id": "c55a0d3b-9045-481e-b529-af8f008c9ebb"
+      },
+      {
+        "envId": "41e260d6-83e3-4cfe-943e-ef6cd83401bb",
+        "name": "ff-test-off",
+        "key": "ff-test-off",
+        "variationType": "boolean",
+        "variations": [
+          {
+            "id": "ab9488b1-c6d0-444d-ad29-8738f9a5f1a3",
+            "value": "true"
+          },
+          {
+            "id": "628ab219-b397-428b-84ce-a1734046c867",
+            "value": "false"
+          }
+        ],
+        "targetUsers": [],
+        "rules": [],
+        "isEnabled": false,
+        "disabledVariationId": "628ab219-b397-428b-84ce-a1734046c867",
+        "fallthrough": {
+          "dispatchKey": null,
+          "includedInExpt": true,
+          "variations": [
+            {
+              "id": "ab9488b1-c6d0-444d-ad29-8738f9a5f1a3",
+              "rollout": [
+                0,
+                1
+              ],
+              "exptRollout": 1
+            }
+          ]
+        },
+        "exptIncludeAllTargets": true,
+        "tags": [],
+        "isArchived": false,
+        "disabledVariation": {
+          "id": "628ab219-b397-428b-84ce-a1734046c867",
+          "value": "false"
+        },
+        "creatorId": "a74cf89d-b855-492a-a3d7-9a8cd6d852aa",
+        "updatorId": "a74cf89d-b855-492a-a3d7-9a8cd6d852aa",
+        "createdAt": "2023-01-19T08:39:51.3648568Z",
+        "updatedAt": "2023-01-19T08:39:51.3648568Z",
+        "id": "4aba499a-271a-4f53-9f15-af8f008ec861"
+      },
+      {
+        "envId": "41e260d6-83e3-4cfe-943e-ef6cd83401bb",
+        "name": "ff-evaluation-test",
+        "key": "ff-evaluation-test",
+        "variationType": "string",
+        "variations": [
+          {
+            "id": "ac21c2fc-eec4-4b49-ad80-cc525720166b",
+            "value": "teamA"
+          },
+          {
+            "id": "b70edce6-2b12-4b57-8a87-6ba54420bb02",
+            "value": "teamB"
+          },
+          {
+            "id": "6958a000-88d1-401f-be92-6b6e6aaa7bfa",
+            "value": "teamC"
+          },
+          {
+            "id": "0918afd7-c0e3-4daf-af72-be62d8c92de0",
+            "value": "teamD"
+          },
+          {
+            "id": "f4a00818-4fae-4ad5-ab3e-e711b079a4a5",
+            "value": "teamE"
+          },
+          {
+            "id": "a71fa697-92d4-4155-b29a-7c40a6c8db03",
+            "value": "teamF"
+          },
+          {
+            "id": "7d32d8c1-4447-4202-a954-f05ae0e8cdbc",
+            "value": "teamG"
+          },
+          {
+            "id": "3fdfe1df-377a-4fed-9985-7518662b046a",
+            "value": "teamH"
+          },
+          {
+            "id": "902c8713-bf46-4df8-b655-351713b8324f",
+            "value": "teamI"
+          }
+        ],
+        "targetUsers": [
+          {
+            "keyIds": [
+              "test-target-user"
+            ],
+            "variationId": "b70edce6-2b12-4b57-8a87-6ba54420bb02"
+          }
+        ],
+        "rules": [
+          {
+            "id": "d999869e-a287-414f-a13e-04accd03dc61",
+            "name": "True Rule",
+            "dispatchKey": null,
+            "includedInExpt": false,
+            "conditions": [
+              {
+                "property": "graduated",
+                "op": "IsTrue",
+                "value": "IsTrue"
+              }
+            ],
+            "variations": [
+              {
+                "id": "6958a000-88d1-401f-be92-6b6e6aaa7bfa",
+                "rollout": [
+                  0,
+                  1
+                ],
+                "exptRollout": 1
+              }
+            ]
+          },
+          {
+            "id": "a8da5927-63ed-412b-8728-f950cc7f785e",
+            "name": "Equal Rule",
+            "dispatchKey": null,
+            "includedInExpt": false,
+            "conditions": [
+              {
+                "property": "country",
+                "op": "Equal",
+                "value": "CHN"
+              }
+            ],
+            "variations": [
+              {
+                "id": "0918afd7-c0e3-4daf-af72-be62d8c92de0",
+                "rollout": [
+                  0,
+                  1
+                ],
+                "exptRollout": 1
+              }
+            ]
+          },
+          {
+            "id": "a1a217c0-d91f-4ea2-b45f-993444ef743c",
+            "name": "Than Rule",
+            "dispatchKey": null,
+            "includedInExpt": false,
+            "conditions": [
+              {
+                "property": "salary",
+                "op": "BiggerEqualThan",
+                "value": "1000"
+              },
+              {
+                "property": "salary",
+                "op": "LessEqualThan",
+                "value": "3000"
+              }
+            ],
+            "variations": [
+              {
+                "id": "f4a00818-4fae-4ad5-ab3e-e711b079a4a5",
+                "rollout": [
+                  0,
+                  1
+                ],
+                "exptRollout": 1
+              }
+            ]
+          },
+          {
+            "id": "bfd4fca9-7131-4bcc-b7c2-c49c3146387c",
+            "name": "Contain Rule",
+            "dispatchKey": null,
+            "includedInExpt": false,
+            "conditions": [
+              {
+                "property": "email",
+                "op": "Contains",
+                "value": "gmail"
+              }
+            ],
+            "variations": [
+              {
+                "id": "a71fa697-92d4-4155-b29a-7c40a6c8db03",
+                "rollout": [
+                  0,
+                  1
+                ],
+                "exptRollout": 1
+              }
+            ]
+          },
+          {
+            "id": "9abbd28c-088a-4d9c-8b68-7d1f4494b18f",
+            "name": "OneOf Rule",
+            "dispatchKey": null,
+            "includedInExpt": false,
+            "conditions": [
+              {
+                "property": "major",
+                "op": "IsOneOf",
+                "value": "[\u0022CS\u0022,\u0022MATH\u0022,\u0022PHYSICS\u0022]"
+              }
+            ],
+            "variations": [
+              {
+                "id": "7d32d8c1-4447-4202-a954-f05ae0e8cdbc",
+                "rollout": [
+                  0,
+                  1
+                ],
+                "exptRollout": 1
+              }
+            ]
+          },
+          {
+            "id": "d9cd384c-6282-482d-a43d-5d4461068e18",
+            "name": "StartEnd Rule",
+            "dispatchKey": null,
+            "includedInExpt": false,
+            "conditions": [
+              {
+                "property": "name",
+                "op": "StartsWith",
+                "value": "group"
+              },
+              {
+                "property": "name",
+                "op": "EndsWith",
+                "value": "user"
+              }
+            ],
+            "variations": [
+              {
+                "id": "3fdfe1df-377a-4fed-9985-7518662b046a",
+                "rollout": [
+                  0,
+                  1
+                ],
+                "exptRollout": 1
+              }
+            ]
+          },
+          {
+            "id": "ecdc09b0-7aa0-485d-8498-990c8589c95c",
+            "name": "MatchRegex Rule",
+            "dispatchKey": null,
+            "includedInExpt": false,
+            "conditions": [
+              {
+                "property": "phone",
+                "op": "MatchRegex",
+                "value": "^(\\\u002B?0?86\\-?)?1[345789]\\d{9}$"
+              }
+            ],
+            "variations": [
+              {
+                "id": "902c8713-bf46-4df8-b655-351713b8324f",
+                "rollout": [
+                  0,
+                  1
+                ],
+                "exptRollout": 1
+              }
+            ]
+          }
+        ],
+        "isEnabled": true,
+        "disabledVariationId": "ac21c2fc-eec4-4b49-ad80-cc525720166b",
+        "fallthrough": {
+          "dispatchKey": null,
+          "includedInExpt": true,
+          "variations": [
+            {
+              "id": "ac21c2fc-eec4-4b49-ad80-cc525720166b",
+              "rollout": [
+                0,
+                1
+              ],
+              "exptRollout": 1
+            }
+          ]
+        },
+        "exptIncludeAllTargets": true,
+        "tags": [],
+        "isArchived": false,
+        "disabledVariation": {
+          "id": "ac21c2fc-eec4-4b49-ad80-cc525720166b",
+          "value": "teamA"
+        },
+        "creatorId": "a74cf89d-b855-492a-a3d7-9a8cd6d852aa",
+        "updatorId": "a74cf89d-b855-492a-a3d7-9a8cd6d852aa",
+        "createdAt": "2023-01-19T09:01:40.163Z",
+        "updatedAt": "2023-01-19T09:18:47.6291759Z",
+        "id": "875491ec-a958-4410-b8dd-af8f0094c620"
+      }
+    ],
+    "segments": [
+      {
+        "envId": "41e260d6-83e3-4cfe-943e-ef6cd83401bb",
+        "name": "team-seg",
+        "description": "test segment",
+        "included": [
+          "test-user-1"
+        ],
+        "excluded": [
+          "test-user-2"
+        ],
+        "rules": [
+          {
+            "id": "a6b06226-36dc-4563-81a6-e94f41da6d0e",
+            "name": "Rule 1",
+            "conditions": [
+              {
+                "property": "major",
+                "op": "IsOneOf",
+                "value": "[\u0022math\u0022,\u0022cs\u0022]"
+              }
+            ]
+          }
+        ],
+        "isArchived": false,
+        "createdAt": "2023-01-19T03:39:12.21Z",
+        "updatedAt": "2023-01-19T03:44:54.4254898Z",
+        "id": "a0832b1c-fe73-479f-9a30-af8f003c34bf"
+      }
+    ]
+  }
+}
