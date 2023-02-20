@@ -107,7 +107,7 @@ client, _ := featbit.NewFBClient(envSecret, streamingUrl, eventUrl)
 
 `envSecret` _**sdkKey(envSecret)**_ is id of your project in FeatBit feature flag center
 
-`streamingURL`: URL of your feature management platform to synchronise feature flags, user segments, etc.
+`streamingURL`: URL of your feature management platform to synchronize feature flags, user segments, etc.
 
 `eventURL`: URL of your feature management platform to send analytics events
 
@@ -173,7 +173,7 @@ that the value was determined.
 `FBUser`: A collection of attributes that can affect flag evaluation, usually corresponding to a user of your
 application.
 This object contains built-in properties(`key`, `userName`). The `key` and `userName` are required.
-The `key` must uniquely identify each user; this could be a username or email address for authenticated users, or a ID
+The `key` must uniquely identify each user; this could be a username or email address for authenticated users, or an ID
 for anonymous users.
 The `userName` is used to search your user quickly.
 You may also define custom properties with arbitrary names and values.
