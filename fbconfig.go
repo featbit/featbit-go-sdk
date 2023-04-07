@@ -52,5 +52,5 @@ var DefaultFBConfig *FBConfig = &FBConfig{
 	DataStorageFactory:      factories.NewInMemoryStorageBuilder(),
 	DataSynchronizerFactory: factories.NewStreamingBuilder(),
 	InsightProcessorFactory: factories.NewInsightProcessorBuilder(),
-	LogLevel:                ERROR,
+	LogLevel:                INFO,
 }

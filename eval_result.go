@@ -113,11 +113,8 @@ func (er *evalResult) checkType(requiredType string) bool {
 	case FlagBoolType:
 		return requiredType == FlagBoolType || requiredType == FlagStringType
 	case FlagNumericType:
-		if requiredType == FlagBoolType {
-			_, err := strconv.ParseFloat(er.fv, 64)
-			return err == nil
-		}
-		return true
+		_, err := strconv.ParseFloat(er.fv, 64)
+		return err == nil
 	case FlagJsonType, FlagStringType:
 		if requiredType == FlagBoolType {
 			_, err := strconv.ParseBool(er.fv)
