@@ -268,8 +268,8 @@ for a specific flag key:
 // be sure that SDK is initialized before evaluation
 // DO not forget to close client when you are done with it
 if client.isInitialized() {
-	// get all variations for a given user in your project 
-	allState, _ := client.AllLatestFlagsVariations(user)
+    // get all variations for a given user in your project 
+    allState, _ := client.AllLatestFlagsVariations(user)
     variation, detail, _ := allState.GetStringVariation("flag key", "Not Found")
 }
 ```
