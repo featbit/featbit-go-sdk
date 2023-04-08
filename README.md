@@ -24,13 +24,11 @@ If you want to use your own data source, see [Offline](#offline).
 
 Go Server Side SDK is based on go 1.13, so you need to install go 1.13 or above.
 
-## Installation
+### Installation
 
 ```
 go get github.com/featbit/featbit-go-sdk
 ```
-
-## SDK
 
 ### Basic usage
 ```go
