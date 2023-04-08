@@ -51,7 +51,7 @@ if err == nil && client.IsInitialized() {
 	    .NewUserBuilder("<replace-with-your-user-key>")
 	    .UserName("<replace-with-your-user-name>")
 	    .Build()
-    flagValue, Detail, _ := client.Variation("<replace-with-your-flag-key>", user, false)
+    flagValue, Detail, _ := client.Variation("<replace-with-your-flag-key>", user, "error")
     fmt.Printf("flag %s, returns %s for user %s \n", ed.KeyName, ed.Variation, user.GetKey())
     fmt.Printf("Reason Description: %s \n", ed.Reason)
 }
