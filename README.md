@@ -111,9 +111,9 @@ if ok {
 }
 ```
 
-### FBClient, FBConfig and Components
+### FBConfig and Components
 
-In the most case, you don't need to care about `featbit.FBConfig` and the internal components, just initialize SDK like:
+In most cases, you don't need to care about `featbit.FBConfig` and the internal components, just initialize SDK like:
 
 ```go
 client, err := featbit.NewFBClient(envSecret, streamingUrl, eventUrl)
@@ -139,7 +139,6 @@ HTTP Proxy, TLS etc.
 `factories.NetworkBuilder` is the default `NetworkFactory`
 
 ```go
-
 factory := factories.NewNetworkBuilder()
 factory.ProxyUrl("http://username:password@146.137.9.45:65233")
 
@@ -149,7 +148,6 @@ client, err := featbit.MakeCustomFBClient(envSecret, streamingUrl, eventUrl, *co
 // or
 config := featbit.FBConfig{NetworkFactory: factory}
 client, err := featbit.MakeCustomFBClient(envSecret, streamingUrl, eventUrl, config)
-
 ```
 
 `DataStorageFactory` sets the implementation of `interfaces.DataStorage` to be used for holding feature flags and
