@@ -3,6 +3,7 @@ package featbit
 import (
 	"encoding/base64"
 	"encoding/json"
+	"github.com/featbit/featbit-go-sdk/factories"
 	"github.com/featbit/featbit-go-sdk/fixtures"
 	"github.com/featbit/featbit-go-sdk/interfaces"
 	"github.com/featbit/featbit-go-sdk/internal/datastorage"
@@ -51,25 +52,57 @@ func TestFBClientBootStrap(t *testing.T) {
 		config := FBConfig{
 			StartWait:               200 * time.Millisecond,
 			DataStorageFactory:      datastorage.NewMockDataStorageBuilder(),
-			DataSynchronizerFactory: datasynchronization.NewMockStreamingBuilder(true, 100*time.Millisecond),
-			InsightProcessorFactory: insight2.NewMockInsightProcessorFactory(insight2.NewMockSender(), 100, 100*time.Millisecond),
+			DataSynchronizerFactory: datasynchronization.NewMockStreamingBuilder(true, true, 100*time.Millisecond),
+			InsightProcessorFactory: factories.ExternalEventTrack(),
 		}
 		client, err := MakeCustomFBClient(fakeEnvSecret, "ws://fake-url", "http://fake-url", config)
 		require.NoError(t, err)
 		assert.True(t, client.IsInitialized())
 		_ = client.Close()
 	})
-	t.Run("start and no wait", func(t *testing.T) {
+	t.Run("start and wait but fail in initialization", func(t *testing.T) {
 		config := FBConfig{
-			StartWait:               0,
+			StartWait:               200 * time.Millisecond,
 			DataStorageFactory:      datastorage.NewMockDataStorageBuilder(),
-			DataSynchronizerFactory: datasynchronization.NewMockStreamingBuilder(true, 100*time.Millisecond),
-			InsightProcessorFactory: insight2.NewMockInsightProcessorFactory(insight2.NewMockSender(), 100, 100*time.Millisecond),
+			DataSynchronizerFactory: datasynchronization.NewMockStreamingBuilder(false, true, 100*time.Millisecond),
+			InsightProcessorFactory: factories.ExternalEventTrack(),
+		}
+		client, err := MakeCustomFBClient(fakeEnvSecret, "ws://fake-url", "http://fake-url", config)
+		assert.Equal(t, err, initializationFailed)
+		assert.False(t, client.IsInitialized())
+		res, detail, err := client.Variation("ff-test-string", testUser1, "error")
+		assert.Equal(t, err, clientNotInitialized)
+		assert.Equal(t, ReasonClientNotReady, detail.Reason)
+		assert.Equal(t, "error", res)
+		_ = client.Close()
+	})
+	t.Run("start and wait but no data loaded", func(t *testing.T) {
+		config := FBConfig{
+			StartWait:               200 * time.Millisecond,
+			DataStorageFactory:      datastorage.NewMockDataStorageBuilder(),
+			DataSynchronizerFactory: datasynchronization.NewMockStreamingBuilder(true, false, 100*time.Millisecond),
+			InsightProcessorFactory: factories.ExternalEventTrack(),
 		}
 		client, err := MakeCustomFBClient(fakeEnvSecret, "ws://fake-url", "http://fake-url", config)
 		require.NoError(t, err)
 		assert.False(t, client.IsInitialized())
-		res, detail, err := client.Variation("flag", testUser1, "error")
+		res, detail, err := client.Variation("ff-test-string", testUser1, "error")
+		assert.Equal(t, err, clientNotInitialized)
+		assert.Equal(t, ReasonClientNotReady, detail.Reason)
+		assert.Equal(t, "error", res)
+		_ = client.Close()
+	})
+	t.Run("start and no wait", func(t *testing.T) {
+		config := FBConfig{
+			StartWait:               0,
+			DataStorageFactory:      datastorage.NewMockDataStorageBuilder(),
+			DataSynchronizerFactory: datasynchronization.NewMockStreamingBuilder(true, true, 100*time.Millisecond),
+			InsightProcessorFactory: factories.ExternalEventTrack(),
+		}
+		client, err := MakeCustomFBClient(fakeEnvSecret, "ws://fake-url", "http://fake-url", config)
+		require.NoError(t, err)
+		assert.False(t, client.IsInitialized())
+		res, detail, err := client.Variation("ff-test-string", testUser1, "error")
 		assert.Equal(t, err, clientNotInitialized)
 		assert.Equal(t, ReasonClientNotReady, detail.Reason)
 		assert.Equal(t, "error", res)
@@ -79,6 +112,8 @@ func TestFBClientBootStrap(t *testing.T) {
 		assert.False(t, allState.IsSuccess())
 		if client.GetDataUpdateStatusProvider().WaitForOKState(200 * time.Millisecond) {
 			assert.True(t, client.IsInitialized())
+			res, _, _ = client.Variation("ff-test-string", testUser1, "error")
+			assert.Equal(t, "others", res)
 		}
 		_ = client.Close()
 	})
@@ -86,14 +121,20 @@ func TestFBClientBootStrap(t *testing.T) {
 		config := FBConfig{
 			StartWait:               50 * time.Millisecond,
 			DataStorageFactory:      datastorage.NewMockDataStorageBuilder(),
-			DataSynchronizerFactory: datasynchronization.NewMockStreamingBuilder(true, 100*time.Millisecond),
-			InsightProcessorFactory: insight2.NewMockInsightProcessorFactory(insight2.NewMockSender(), 100, 100*time.Millisecond),
+			DataSynchronizerFactory: datasynchronization.NewMockStreamingBuilder(true, true, 100*time.Millisecond),
+			InsightProcessorFactory: factories.ExternalEventTrack(),
 		}
 		client, err := MakeCustomFBClient(fakeEnvSecret, "ws://fake-url", "http://fake-url", config)
 		assert.Equal(t, err, initializationTimeout)
 		assert.False(t, client.IsInitialized())
+		res, detail, err := client.Variation("ff-test-string", testUser1, "error")
+		assert.Equal(t, err, clientNotInitialized)
+		assert.Equal(t, ReasonClientNotReady, detail.Reason)
+		assert.Equal(t, "error", res)
 		if client.GetDataUpdateStatusProvider().WaitForOKState(200 * time.Millisecond) {
 			assert.True(t, client.IsInitialized())
+			res, _, _ = client.Variation("ff-test-string", testUser1, "error")
+			assert.Equal(t, "others", res)
 		}
 		_ = client.Close()
 	})
@@ -282,7 +323,7 @@ func TestFBTrackEvent(t *testing.T) {
 		config := FBConfig{
 			StartWait:               200 * time.Millisecond,
 			DataStorageFactory:      datastorage.NewMockDataStorageBuilder(),
-			DataSynchronizerFactory: datasynchronization.NewMockStreamingBuilder(true, 10*time.Millisecond),
+			DataSynchronizerFactory: datasynchronization.NewMockStreamingBuilder(true, true, 10*time.Millisecond),
 			InsightProcessorFactory: insight2.NewMockInsightProcessorFactory(sender, 100, 100*time.Millisecond),
 		}
 		client, err := MakeCustomFBClient(fakeEnvSecret, "ws://fake-url", "http://fake-url", config)
@@ -302,7 +343,7 @@ func TestFBTrackEvent(t *testing.T) {
 		config := FBConfig{
 			StartWait:               200 * time.Millisecond,
 			DataStorageFactory:      datastorage.NewMockDataStorageBuilder(),
-			DataSynchronizerFactory: datasynchronization.NewMockStreamingBuilder(true, 10*time.Millisecond),
+			DataSynchronizerFactory: datasynchronization.NewMockStreamingBuilder(true, true, 10*time.Millisecond),
 			InsightProcessorFactory: insight2.NewMockInsightProcessorFactory(sender, 100, 100*time.Millisecond),
 		}
 		client, err := MakeCustomFBClient(fakeEnvSecret, "ws://fake-url", "http://fake-url", config)
@@ -324,7 +365,7 @@ func TestFBTrackEvent(t *testing.T) {
 		config := FBConfig{
 			StartWait:               200 * time.Millisecond,
 			DataStorageFactory:      datastorage.NewMockDataStorageBuilder(),
-			DataSynchronizerFactory: datasynchronization.NewMockStreamingBuilder(true, 10*time.Millisecond),
+			DataSynchronizerFactory: datasynchronization.NewMockStreamingBuilder(true, true, 10*time.Millisecond),
 			InsightProcessorFactory: insight2.NewMockInsightProcessorFactory(sender, 100, 100*time.Millisecond),
 		}
 		client, err := MakeCustomFBClient(fakeEnvSecret, "ws://fake-url", "http://fake-url", config)
@@ -344,7 +385,7 @@ func TestFBTrackEvent(t *testing.T) {
 		config := FBConfig{
 			StartWait:               200 * time.Millisecond,
 			DataStorageFactory:      datastorage.NewMockDataStorageBuilder(),
-			DataSynchronizerFactory: datasynchronization.NewMockStreamingBuilder(true, 10*time.Millisecond),
+			DataSynchronizerFactory: datasynchronization.NewMockStreamingBuilder(true, true, 10*time.Millisecond),
 			InsightProcessorFactory: insight2.NewMockInsightProcessorFactory(sender, 100, 100*time.Millisecond),
 		}
 		client, err := MakeCustomFBClient(fakeEnvSecret, "ws://fake-url", "http://fake-url", config)
