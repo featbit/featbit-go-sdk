@@ -1,24 +1,21 @@
-# Go server Side SDK
+# FeatBit Server-Side SDK for Go
 
 ## Introduction
 
 This is the Go Server-Side SDK for the 100% open-source feature flags management
-platform [FeatBit](https://github.com/featbit/featbit). It is intended for use in a multi-user Go
-server applications.
+platform [FeatBit](https://github.com/featbit/featbit). 
 
-This SDK has two main purposes:
+The FeatBit Server-Side SDK for Go is designed primarily for use in multi-user systems such as web servers and
+applications.
 
-- Store the available feature flags and evaluate the feature flag variation for a given user
-- Send feature flag usage and custom events for the insights and A/B/n testing.
-
-## Data synchonization
+## Data synchronization
 
 We use websocket to make the local data synchronized with the FeatBit server, and then store them in memory by
 default. Whenever there is any change to a feature flag or its related data, this change will be pushed to the SDK and
 the average synchronization time is less than 100 ms. Be aware the websocket connection may be interrupted due to
 internet outage, but it will be resumed automatically once the problem is gone.
 
-If you want to use your own data source, see [Offline](#offline).
+If you want to use your own data source, see [Offline Mode](#offline-mode).
 
 ## Get Started
 
@@ -30,31 +27,37 @@ Go Server Side SDK is based on go 1.13, so you need to install go 1.13 or above.
 go get github.com/featbit/featbit-go-sdk
 ```
 
-### Basic usage
+### Quick Start
 ```go
+package main
 
-envSecret := "<replace-with-your-env-secret>"
-streamingUrl := "ws://localhost:5100"
-eventUrl := "http://localhost:5100"
+import (
+	"fmt"
+	"github.com/featbit/featbit-go-sdk"
+	"github.com/featbit/featbit-go-sdk/interfaces"
+)
 
-client, err := featbit.NewFBClient(envSecret, streamingUrl, eventUrl)
+func main() {
+	envSecret := "<replace-with-your-env-secret>"
+	streamingUrl := "ws://localhost:5100"
+	eventUrl := "http://localhost:5100"
 
-// should close the client when you don't need it anymore
-defer func() {
-    if client != nil {
-        _ = client.Close()
-    }
-}()
+	client, err := featbit.NewFBClient(envSecret, streamingUrl, eventUrl)
 
-if err == nil && client.IsInitialized() {
-    user, _ := interfaces
-	    .NewUserBuilder("<replace-with-your-user-key>")
-	    .UserName("<replace-with-your-user-name>")
-	    .Build()
-    flagValue, Detail, _ := client.Variation("<replace-with-your-flag-key>", user, "error")
-    fmt.Printf("flag %s, returns %s for user %s \n", ed.KeyName, ed.Variation, user.GetKey())
-    fmt.Printf("Reason Description: %s \n", ed.Reason)
+	defer func() {
+		if client != nil {
+			// ensure that the SDK shuts down cleanly and has a chance to deliver events to FeatBit before the program exits
+			_ = client.Close()
+		}
+	}()
+
+	if err == nil && client.IsInitialized() {
+		user, _ := interfaces.NewUserBuilder("bot-id").UserName("bot").Build()
+		_, ed, _ := client.BoolVariation("use-new-algorithm", user, false)
+		fmt.Printf("flag %s, returns %s for user %s, reason: %s \n", ed.KeyName, ed.Variation, user.GetKey(), ed.Reason)
+	}
 }
+
 
 ```
 Note that the _**envSecret**_, _**streamUrl**_ and _**eventUrl**_ are required to initialize the SDK.
@@ -69,7 +72,7 @@ Applications SHOULD instantiate a single instance for the lifetime of the applic
 needs to evaluate feature flags from different environments, you may create multiple clients, but they should still be
 retained for the lifetime of the application rather than created per request or per thread.
 
-### Bootstrapping
+#### Bootstrapping
 
 The bootstrapping is in fact the call of constructor of `featbit.FBClient`, in which the SDK will be initialized, using
 streaming from your feature management platform.
@@ -84,9 +87,9 @@ client. You can detect whether initialization has succeeded by calling `featbit.
 ```go
 config := featbit.FBConfig{StartWait: 10 * time.Second}
 client, err := featbit.MakeCustomFBClient(envSecret, streamingUrl, eventUrl, config)
-// DO not forget to close the client when you don't need it anymore
+    // DO NOT forget to close the client when you don't need it anymore
 if err ==nil && !client.IsInitialized() {
-// do whatever is appropriate if initialization has timed out
+    // do whatever is appropriate if initialization has timed out
 }
 
 ```
@@ -97,16 +100,15 @@ point, you can use `featbit.FBClient.GetDataUpdateStatusProvider()`, which provi
 ```go
 config := featbit.FBConfig{StartWait: 0}
 client, err := featbit.MakeCustomFBClient(envSecret, streamingUrl, eventUrl, config)
-// DO not forget to close the client when you don't need it anymore
-// later...
+    // DO NOT forget to close the client when you don't need it anymore
+    // later...
 if err !=nil {
     return
 }
 ok := client.GetDataSourceStatusProvider().WaitForOKState(10 * time.Second)
 if !ok {
-// do whatever is appropriate if initialization has timed out
+    // do whatever is appropriate if initialization has timed out
 }
-
 ```
 
 ### FBClient, FBConfig and Components
@@ -114,9 +116,7 @@ if !ok {
 In the most case, you don't need to care about `featbit.FBConfig` and the internal components, just initialize SDK like:
 
 ```go
-
 client, err := featbit.NewFBClient(envSecret, streamingUrl, eventUrl)
-
 ```
 
 `envSecret` _**sdkKey(envSecret)**_ is id of your project in FeatBit feature flag center
@@ -167,48 +167,9 @@ If Developers would like to know what the implementation is, they can read the G
 
 It's not recommended to change the default factories in the `featbit.FBConfig`
 
-### Offline
-
-In the offline mode, SDK DOES not exchange any data with your feature management platform
-
-To open the offline mode:
-
-```go
-config := featbit.DefaultFBConfig
-featbit.Offline = true
-featbit.StartWait = 1 * time.Millisecond
-client, err := featbit.MakeCustomFBClient(envSecret, streamingUrl, eventUrl, *config)
-// or
-config := FBConfig{Offline: true, StartWait: 1 * time.Millisecond}
-client, err := featbit.MakeCustomFBClient(envSecret, streamingUrl, eventUrl, config)
-
-```
-
-When you put the SDK in offline mode, no insight message is sent to the server and all feature flag evaluations return
-fallback values because there are no feature flags or segments available. If you want to use your own data source,
-SDK allows users to populate feature flags and segments data from a JSON string.
-
-Here is an example: [fbclient_test_data.json](fixtures/fbclient_test_data.json).
-
-The format of the data in flags and segments is defined by FeatBit and is subject to change. Rather than trying to
-construct these objects yourself, it's simpler to request existing flags directly from the FeatBit server in JSON format
-and use this output as the starting point for your file. Here's how:
-
-```shell
-# replace http://localhost:5100 with your evaluation server url
-curl -H "Authorization: <your-env-secret>" http://localhost:5100/api/public/sdk/server/latest-all > featbit-bootstrap.json
-```
-
-Then you can use this file to initialize the SDK in offline mode:
-    
-```go
-// first load data from file and then 
-ok, _ := client.InitializeFromExternalJson(string(jsonBytes))
-```
-
 ### FBUser
 
-`FBUser`: A collection of attributes that can affect flag evaluation, usually corresponding to a user of your
+A collection of attributes that can affect flag evaluation, usually corresponding to a user of your
 application.
 This object contains built-in properties(`key`, `userName`). The `key` and `userName` are required.
 The `key` must uniquely identify each user; this could be a username or email address for authenticated users, or an ID
@@ -272,9 +233,44 @@ if client.isInitialized() {
 }
 ```
 
+### Offline Mode
+
+In some situations, you might want to stop making remote calls to FeatBit. Here is how:
+
+```go
+config := featbit.DefaultFBConfig
+featbit.Offline = true
+featbit.StartWait = 1 * time.Millisecond
+client, err := featbit.MakeCustomFBClient(envSecret, streamingUrl, eventUrl, *config)
+// or
+config := FBConfig{Offline: true, StartWait: 1 * time.Millisecond}
+client, err := featbit.MakeCustomFBClient(envSecret, streamingUrl, eventUrl, config)
+
+```
+
+When you put the SDK in offline mode, no insight message is sent to the server and all feature flag evaluations return
+fallback values because there are no feature flags or segments available. If you want to use your own data source,
+SDK allows users to populate feature flags and segments data from a JSON string. Here is an example: [fbclient_test_data.json](fixtures/fbclient_test_data.json).
+
+The format of the data in flags and segments is defined by FeatBit and is subject to change. Rather than trying to
+construct these objects yourself, it's simpler to request existing flags directly from the FeatBit server in JSON format
+and use this output as the starting point for your file. Here's how:
+
+```shell
+# replace http://localhost:5100 with your evaluation server url
+curl -H "Authorization: <your-env-secret>" http://localhost:5100/api/public/sdk/server/latest-all > featbit-bootstrap.json
+```
+
+Then you can use this file to initialize the SDK in offline mode:
+
+```go
+// first load data from file and then 
+ok, _ := client.InitializeFromExternalJson(string(jsonBytes))
+```
+
 ### Experiments (A/B/n Testing)
 
-We support automatic experiments for pageviews and clicks, you just need to set your experiment on FeatBit platform,
+We support automatic experiments for page-views and clicks, you just need to set your experiment on FeatBit platform,
 then you should be able to see the result in near real time after the experiment is started.
 
 In case you need more control over the experiment data sent to our server, we offer a method to send custom event.
@@ -295,7 +291,7 @@ otherwise the custom event may not be included into the experiment result.
 - If you have a specific question about using this sdk, we encourage you
   to [ask it in our slack](https://join.slack.com/t/featbit/shared_invite/zt-1ew5e2vbb-x6Apan1xZOaYMnFzqZkGNQ).
 - If you encounter a bug or would like to request a
-  feature, [submit an issue](https://github.com/featbit/dotnet-server-sdk/issues/new).
+  feature, [submit an issue](https://github.com/featbit/featbit-go-sdk/issues/new).
 
 ## See Also
 - [Connect To Go Sdk](https://docs.featbit.co/docs/getting-started/4.-connect-an-sdk/server-side-sdks/go-sdk)
