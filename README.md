@@ -56,10 +56,12 @@ func main() {
 	}()
 
 	if err == nil && client.IsInitialized() {
-		user, _ := interfaces.NewUserBuilder("bot-id").UserName("bot").Build()
-		_, ed, _ := client.BoolVariation("use-new-algorithm", user, false)
+		user, _ := interfaces.NewUserBuilder("<replace-with-your-user-key>").UserName("<replace-with-your-user-name>").Build()
+		_, ed, _ := client.BoolVariation("<replace-with-your-feature-flag-key>", user, false)
 		fmt.Printf("flag %s, returns %s for user %s, reason: %s \n", ed.KeyName, ed.Variation, user.GetKey(), ed.Reason)
-	}
+	} else {
+		fmt.Println("SDK initialization failed")
+    }
 }
 ```
 
@@ -85,12 +87,23 @@ you will receive the client in an uninitialized state where feature flags will r
 continue trying to connect in the background unless there has been an `net.DNSError` or you close the
 client. You can detect whether initialization has succeeded by calling `featbit.FBClient.IsInitialized()`.
 
+If `featbit.FBClient.IsInitialized()` returns True, it means the `featbit.FBClient` has succeeded at some point in connecting to feature flag center and
+has received feature flag data.
+
+If `featbit.FBClient.IsInitialized()` returns false, it means the client has not yet connected to feature flag center, or has permanently
+failed. In this state, feature flag evaluations will always return default values. Another state that will cause this to return false is if the interfaces.DataStorage is empty. 
+It's strongly recommended to create at least one feature flag in your environment before using the SDK.
+
+`featbit.FBClient.IsInitialized()` is optional, but it is recommended that you use it to avoid to get default values when the SDK is not yet initialized.
+
 ```go
 config := featbit.FBConfig{StartWait: 10 * time.Second}
 // DO NOT forget to close the client when you don't need it anymore
 client, err := featbit.MakeCustomFBClient(envSecret, streamingUrl, eventUrl, config)
-if if err == nil && client.IsInitialized() {
+if err == nil && client.IsInitialized() {
     // the client is ready
+} else {
+    // the client is not ready
 }
 
 ```
@@ -108,6 +121,8 @@ if err != nil {
 ok := client.GetDataSourceStatusProvider().WaitForOKState(10 * time.Second)
 if ok {
     // the client is ready
+} else {
+    // the client is not ready
 }
 ```
 

@@ -257,11 +257,14 @@ func (s *Streaming) onDataProcess(allData *data.All) bool {
 	}
 	if success {
 		s.readyOnce.Do(func() {
-			log.LogDebug("processing data is well done")
 			s.initialized = true
 			close(s.readyCh)
-			s.dataUpdater.UpdateStatus(OKState())
 		})
+		// if data storage is not yet initialized, we should keep the status as INITIALIZING
+		if s.dataUpdater.StorageInitialized() {
+			log.LogDebug("processing data is well done")
+			s.dataUpdater.UpdateStatus(OKState())
+		}
 	}
 	return success
 }

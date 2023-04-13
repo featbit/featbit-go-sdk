@@ -204,9 +204,13 @@ func MakeCustomFBClient(envSecret string, streamingUrl string, eventUrl string, 
 		}
 		select {
 		case <-ready:
-			if !client.IsInitialized() && !config.Offline {
+			if !client.dataSynchronizer.IsInitialized() && !config.Offline {
 				log.LogWarn("FB GO SDK: SDK was not successfully initialized")
 				return client, initializationFailed
+			}
+			if !client.dataUpdater.StorageInitialized() && !config.Offline {
+				log.LogWarn("FB GO SDK: SDK was not completely initialized because of no data found in your environment")
+				return client, nil
 			}
 			log.LogInfo("FB GO SDK: SDK initialization is completed")
 			return client, nil
@@ -224,7 +228,7 @@ func MakeCustomFBClient(envSecret string, streamingUrl string, eventUrl string, 
 }
 
 // IsInitialized tests whether the client is ready to be used.
-// return true if the client is ready, or false if it is still initializing
+// return true if the client is ready, or false if it is still initializing/interfaces.DataStorage is empty.
 //
 // If this value is true, it means the FBClient has succeeded at some point in connecting to feature flag center and
 // has received feature flag data. It could still have encountered a connection problem after that point, so
@@ -233,11 +237,13 @@ func MakeCustomFBClient(envSecret string, streamingUrl string, eventUrl string, 
 // If this value is false, it means the client has not yet connected to feature flag center, or has permanently
 // failed. In this state, feature flag evaluations will always return default values. You can use FBClient.GetDataUpdateStatusProvider
 // to get information on errors, or to wait for a successful retry.
+// Another state that will cause this to return false is if the interfaces.DataStorage is empty. It's strongly recommended to create at least one feature flag in your environment
+// before using the SDK.
 func (client *FBClient) IsInitialized() bool {
-	if client.dataSynchronizer == nil {
+	if client.dataSynchronizer == nil || client.dataUpdater == nil {
 		return false
 	}
-	return client.dataSynchronizer.IsInitialized()
+	return client.dataSynchronizer.IsInitialized() && client.dataUpdater.StorageInitialized()
 }
 
 // Close shuts down the FBClient. After calling this, the FBClient should no longer be used.
