@@ -28,6 +28,10 @@ go get github.com/featbit/featbit-go-sdk
 ```
 
 ### Quick Start
+> Note that the _**envSecret**_, _**streamUrl**_ and _**eventUrl**_ are required to initialize the SDK.
+
+The following code demonstrates basic usage of the SDK.
+
 ```go
 package main
 
@@ -57,10 +61,7 @@ func main() {
 		fmt.Printf("flag %s, returns %s for user %s, reason: %s \n", ed.KeyName, ed.Variation, user.GetKey(), ed.Reason)
 	}
 }
-
-
 ```
-Note that the _**envSecret**_, _**streamUrl**_ and _**eventUrl**_ are required to initialize the SDK.
 
 ### Examples
 
@@ -68,7 +69,7 @@ Note that the _**envSecret**_, _**streamUrl**_ and _**eventUrl**_ are required t
 
 ### FBClient
 
-Applications SHOULD instantiate a single instance for the lifetime of the application. In the case where an application
+Applications **SHOULD instantiate a single FBClient instance** for the lifetime of the application. In the case where an application
 needs to evaluate feature flags from different environments, you may create multiple clients, but they should still be
 retained for the lifetime of the application rather than created per request or per thread.
 
@@ -86,10 +87,10 @@ client. You can detect whether initialization has succeeded by calling `featbit.
 
 ```go
 config := featbit.FBConfig{StartWait: 10 * time.Second}
+// DO NOT forget to close the client when you don't need it anymore
 client, err := featbit.MakeCustomFBClient(envSecret, streamingUrl, eventUrl, config)
-    // DO NOT forget to close the client when you don't need it anymore
-if err ==nil && !client.IsInitialized() {
-    // do whatever is appropriate if initialization has timed out
+if if err == nil && client.IsInitialized() {
+    // the client is ready
 }
 
 ```
@@ -99,15 +100,14 @@ point, you can use `featbit.FBClient.GetDataUpdateStatusProvider()`, which provi
 
 ```go
 config := featbit.FBConfig{StartWait: 0}
+// DO NOT forget to close the client when you don't need it anymore
 client, err := featbit.MakeCustomFBClient(envSecret, streamingUrl, eventUrl, config)
-    // DO NOT forget to close the client when you don't need it anymore
-    // later...
-if err !=nil {
+if err != nil {
     return
 }
 ok := client.GetDataSourceStatusProvider().WaitForOKState(10 * time.Second)
-if !ok {
-    // do whatever is appropriate if initialization has timed out
+if ok {
+    // the client is ready
 }
 ```
 
