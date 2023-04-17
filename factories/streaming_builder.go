@@ -58,6 +58,6 @@ func ExternalDataSynchronization() DataSynchronizerFactory {
 	return &nullDataSynchronizerBuilder{}
 }
 
-func (n *nullDataSynchronizerBuilder) CreateDataSynchronizer(Context, DataUpdater) (DataSynchronizer, error) {
-	return datasynchronization.NewNullDataSynchronizer(), nil
+func (n *nullDataSynchronizerBuilder) CreateDataSynchronizer(_ Context, dataUpdater DataUpdater) (DataSynchronizer, error) {
+	return datasynchronization.NewNullDataSynchronizer(dataUpdater), nil
 }

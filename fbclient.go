@@ -124,6 +124,8 @@ func MakeCustomFBClient(envSecret string, streamingUrl string, eventUrl string, 
 		} else if !util.IsUrl(streamingUrl) || !util.IsUrl(eventUrl) {
 			return nil, hostInvalid
 		}
+	} else {
+		log.LogInfo("FB GO SDK: SDK is in offline mode")
 	}
 	networkFactory := config.NetworkFactory
 	if networkFactory == nil {
@@ -133,13 +135,13 @@ func MakeCustomFBClient(envSecret string, streamingUrl string, eventUrl string, 
 	if err != nil {
 		return nil, err
 	}
+	client := &FBClient{offline: config.Offline}
+	// init components
+	// data storage
 	dataStorageFactory := config.DataStorageFactory
 	if dataStorageFactory == nil {
 		dataStorageFactory = factories.NewInMemoryStorageBuilder()
 	}
-	client := &FBClient{offline: config.Offline}
-	// init components
-	// data storage
 	client.dataStorage, err = dataStorageFactory.CreateDataStorage(ctx)
 	if err != nil {
 		return nil, err
@@ -199,20 +201,18 @@ func MakeCustomFBClient(envSecret string, streamingUrl string, eventUrl string, 
 	}
 	ready := client.dataSynchronizer.Start()
 	if config.StartWait > 0 {
-		if client.dataSynchronizer != datasynchronization.NewNullDataSynchronizer() {
+		if _, ok := client.dataSynchronizer.(*datasynchronization.NullDataSynchronizer); !ok {
 			log.LogInfo("FB GO SDK: waiting for Client initialization in %d milliseconds", config.StartWait/time.Millisecond)
+		}
+		if !client.dataUpdater.StorageInitialized() && !config.Offline {
+			log.LogWarn("FB GO SDK: SDK just returns default variation because of no data found in the given environment")
 		}
 		select {
 		case <-ready:
-			if !client.dataSynchronizer.IsInitialized() && !config.Offline {
+			if !client.dataSynchronizer.IsInitialized() {
 				log.LogWarn("FB GO SDK: SDK was not successfully initialized")
 				return client, initializationFailed
 			}
-			if !client.dataUpdater.StorageInitialized() && !config.Offline {
-				log.LogWarn("FB GO SDK: SDK was not completely initialized because of no data found in your environment")
-				return client, nil
-			}
-			log.LogInfo("FB GO SDK: SDK initialization is completed")
 			return client, nil
 		case <-time.After(config.StartWait):
 			log.LogWarn("FB GO SDK: timeout encountered when waiting for data update")
@@ -228,7 +228,7 @@ func MakeCustomFBClient(envSecret string, streamingUrl string, eventUrl string, 
 }
 
 // IsInitialized tests whether the client is ready to be used.
-// return true if the client is ready, or false if it is still initializing/interfaces.DataStorage is empty.
+// return true if the client is ready, or false if it is still initializing.
 //
 // If this value is true, it means the FBClient has succeeded at some point in connecting to feature flag center and
 // has received feature flag data. It could still have encountered a connection problem after that point, so
@@ -236,14 +236,13 @@ func MakeCustomFBClient(envSecret string, streamingUrl string, eventUrl string, 
 //
 // If this value is false, it means the client has not yet connected to feature flag center, or has permanently
 // failed. In this state, feature flag evaluations will always return default values. You can use FBClient.GetDataUpdateStatusProvider
-// to get information on errors, or to wait for a successful retry.
-// Another state that will cause this to return false is if the interfaces.DataStorage is empty. It's strongly recommended to create at least one feature flag in your environment
-// before using the SDK.
+// to get current status of the client.
+
 func (client *FBClient) IsInitialized() bool {
-	if client.dataSynchronizer == nil || client.dataUpdater == nil {
+	if client.dataSynchronizer == nil {
 		return false
 	}
-	return client.dataSynchronizer.IsInitialized() && client.dataUpdater.StorageInitialized()
+	return client.dataSynchronizer.IsInitialized()
 }
 
 // Close shuts down the FBClient. After calling this, the FBClient should no longer be used.

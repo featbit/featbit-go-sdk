@@ -12,7 +12,7 @@ type MockStreaming struct {
 	success         bool
 	loadData        bool
 	waitTime        time.Duration
-	realDataUpdator DataUpdater
+	realDataUpdater DataUpdater
 	initialized     bool
 }
 
@@ -34,8 +34,8 @@ func (m *MockStreaming) Start() <-chan struct{} {
 				jsonBytes, _ := fixtures.LoadFBClientTestData()
 				var all data.All
 				_ = json.Unmarshal(jsonBytes, &all)
-				m.realDataUpdator.Init(all.Data.ToStorageType(), all.Data.GetTimestamp())
-				m.realDataUpdator.UpdateStatus(OKState())
+				m.realDataUpdater.Init(all.Data.ToStorageType(), all.Data.GetTimestamp())
+				m.realDataUpdater.UpdateStatus(OKState())
 			}
 		}
 		close(ret)
@@ -57,5 +57,5 @@ func (m *MockStreamingBuilder) CreateDataSynchronizer(_ Context, dataUpdater Dat
 	if m.waitTime <= 0 {
 		m.waitTime = 100 * time.Millisecond
 	}
-	return &MockStreaming{success: m.success, loadData: m.loadData, waitTime: m.waitTime, realDataUpdator: dataUpdater}, nil
+	return &MockStreaming{success: m.success, loadData: m.loadData, waitTime: m.waitTime, realDataUpdater: dataUpdater}, nil
 }
