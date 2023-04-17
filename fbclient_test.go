@@ -85,10 +85,10 @@ func TestFBClientBootStrap(t *testing.T) {
 		}
 		client, err := MakeCustomFBClient(fakeEnvSecret, "ws://fake-url", "http://fake-url", config)
 		require.NoError(t, err)
-		assert.False(t, client.IsInitialized())
+		assert.True(t, client.IsInitialized())
 		res, detail, err := client.Variation("ff-test-string", testUser1, "error")
-		assert.Equal(t, err, clientNotInitialized)
-		assert.Equal(t, ReasonClientNotReady, detail.Reason)
+		assert.Equal(t, err, flagNotFound)
+		assert.Equal(t, ReasonFlagNotFound, detail.Reason)
 		assert.Equal(t, "error", res)
 		_ = client.Close()
 	})

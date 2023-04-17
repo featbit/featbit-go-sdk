@@ -81,20 +81,13 @@ The bootstrapping is in fact the call of constructor of `featbit.FBClient`, in w
 streaming from your feature management platform.
 
 The constructor will return when it successfully connects, or when the timeout set
-by `featbit.FBConfig.StartWait`
-(default: 15 seconds) expires, whichever comes first. If it has not succeeded in connecting when the timeout elapses,
+by `featbit.FBConfig.StartWait`(default: 15 seconds) expires, whichever comes first. If it has not succeeded in connecting when the timeout elapses,
 you will receive the client in an uninitialized state where feature flags will return default values; it will still
-continue trying to connect in the background unless there has been an `net.DNSError` or you close the
-client. You can detect whether initialization has succeeded by calling `featbit.FBClient.IsInitialized()`.
+continue trying to connect in the background unless there has been an `net.DNSError` or you close the client. 
+You can detect whether initialization has succeeded by calling `featbit.FBClient.IsInitialized()`.
 
-If `featbit.FBClient.IsInitialized()` returns True, it means the `featbit.FBClient` has succeeded at some point in connecting to feature flag center and
-has received feature flag data.
-
-If `featbit.FBClient.IsInitialized()` returns false, it means the client has not yet connected to feature flag center, or has permanently
-failed. In this state, feature flag evaluations will always return default values. Another state that will cause this to return false is if the interfaces.DataStorage is empty. 
-It's strongly recommended to create at least one feature flag in your environment before using the SDK.
-
-`featbit.FBClient.IsInitialized()` is optional, but it is recommended that you use it to avoid to get default values when the SDK is not yet initialized.
+If `featbit.FBClient.IsInitialized()` returns True, it means the `featbit.FBClient` has succeeded at some point in connecting to feature flag center, 
+otherwise client has not yet connected to feature flag center, or has permanently failed. In this state, feature flag evaluations will always return default values.
 
 ```go
 config := featbit.FBConfig{StartWait: 10 * time.Second}
@@ -102,14 +95,13 @@ config := featbit.FBConfig{StartWait: 10 * time.Second}
 client, err := featbit.MakeCustomFBClient(envSecret, streamingUrl, eventUrl, config)
 if err == nil && client.IsInitialized() {
     // the client is ready
-} else {
-    // the client is not ready
 }
 
 ```
 
 If you prefer to have the constructor return immediately, and then wait for initialization to finish at some other
-point, you can use `featbit.FBClient.GetDataUpdateStatusProvider()`, which provides an asynchronous way, as follows:
+point, you can use `featbit.FBClient.GetDataUpdateStatusProvider()`, which will return an implementation of `interfaces.DataUpdateStatusProvider`.
+This interface has a `WaitForOKState` method that will block until the client has successfully connected, or until the timeout expires.
 
 ```go
 config := featbit.FBConfig{StartWait: 0}
@@ -121,10 +113,10 @@ if err != nil {
 ok := client.GetDataSourceStatusProvider().WaitForOKState(10 * time.Second)
 if ok {
     // the client is ready
-} else {
-    // the client is not ready
 }
 ```
+> To check if the client is ready is optional. Even if the client is not ready, you can still evaluate feature flags, but the default value will be returned if SDK is not yet initialized.
+
 
 ### FBConfig and Components
 
@@ -206,9 +198,6 @@ in real time, as mentioned in [Bootstrapping](#bootstrapping).
 After initialization, the SDK has all the feature flags in the memory and all evaluation is done _**locally and
 synchronously**_, the average evaluation time is < _**10**_ ms.
 
-If evaluation called before Go SDK client initialized, or you set the wrong flag key or user for the evaluation, SDK will return
-the default value you set.
-
 SDK supports String, Boolean, and Number and Json as the return type of flag values:
 
 - Variation(for string)
@@ -245,6 +234,9 @@ if client.isInitialized() {
     variation, detail, _ := allState.GetStringVariation("flag key", "Not Found")
 }
 ```
+
+> Note that if evaluation called before Go SDK client initialized, you set the wrong flag key/user for the evaluation or the related feature flag
+is not found, SDK will return the default value you set. `interfaces.EvalDetail` will explain the details of the latest evaluation including error raison.
 
 ### Offline Mode
 

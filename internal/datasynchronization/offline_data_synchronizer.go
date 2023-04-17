@@ -1,17 +1,15 @@
 package datasynchronization
 
-import "sync"
+import (
+	. "github.com/featbit/featbit-go-sdk/interfaces"
+)
 
-type NullDataSynchronizer struct{}
+type NullDataSynchronizer struct {
+	realDataUpdater DataUpdater
+}
 
-var instance *NullDataSynchronizer
-var once sync.Once
-
-func NewNullDataSynchronizer() *NullDataSynchronizer {
-	once.Do(func() {
-		instance = &NullDataSynchronizer{}
-	})
-	return instance
+func NewNullDataSynchronizer(dataUpdater DataUpdater) *NullDataSynchronizer {
+	return &NullDataSynchronizer{realDataUpdater: dataUpdater}
 }
 
 func (n *NullDataSynchronizer) Close() error {
@@ -25,5 +23,6 @@ func (n *NullDataSynchronizer) IsInitialized() bool {
 func (n *NullDataSynchronizer) Start() <-chan struct{} {
 	ready := make(chan struct{})
 	close(ready)
+	n.realDataUpdater.UpdateStatus(OKState())
 	return ready
 }
