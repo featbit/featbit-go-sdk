@@ -204,11 +204,11 @@ func MakeCustomFBClient(envSecret string, streamingUrl string, eventUrl string, 
 		if _, ok := client.dataSynchronizer.(*datasynchronization.NullDataSynchronizer); !ok {
 			log.LogInfo("FB GO SDK: waiting for Client initialization in %d milliseconds", config.StartWait/time.Millisecond)
 		}
-		if !client.dataUpdater.StorageInitialized() && !config.Offline {
-			log.LogWarn("FB GO SDK: SDK just returns default variation because of no data found in the given environment")
-		}
 		select {
 		case <-ready:
+			if !client.dataUpdater.StorageInitialized() && !config.Offline {
+				log.LogWarn("FB GO SDK: SDK just returns default variation because of no data found in the given environment")
+			}
 			if !client.dataSynchronizer.IsInitialized() {
 				log.LogWarn("FB GO SDK: SDK was not successfully initialized")
 				return client, initializationFailed
