@@ -27,6 +27,15 @@ Go Server Side SDK is based on go 1.13, so you need to install go 1.13 or above.
 go get github.com/featbit/featbit-go-sdk
 ```
 
+### Prerequisite
+
+Before using the SDK, you need to obtain the environment secret and SDK URLs. 
+
+Follow the documentation below to retrieve these values
+
+- [How to get the environment secret](https://docs.featbit.co/docs/sdk/faq#how-to-get-the-environment-secret)
+- [How to get the SDK URLs](https://docs.featbit.co/docs/sdk/faq#how-to-get-the-sdk-urls)
+  
 ### Quick Start
 > Note that the _**envSecret**_, _**streamUrl**_ and _**eventUrl**_ are required to initialize the SDK.
 
