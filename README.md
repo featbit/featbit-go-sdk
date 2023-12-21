@@ -33,8 +33,8 @@ Before using the SDK, you need to obtain the environment secret and SDK URLs.
 
 Follow the documentation below to retrieve these values
 
-- [How to get the environment secret](https://docs.featbit.co/docs/sdk/faq#how-to-get-the-environment-secret)
-- [How to get the SDK URLs](https://docs.featbit.co/docs/sdk/faq#how-to-get-the-sdk-urls)
+- [How to get the environment secret](https://docs.featbit.co/sdk/faq#how-to-get-the-environment-secret)
+- [How to get the SDK URLs](https://docs.featbit.co/sdk/faq#how-to-get-the-sdk-urls)
   
 ### Quick Start
 > Note that the _**envSecret**_, _**streamUrl**_ and _**eventUrl**_ are required to initialize the SDK.
@@ -308,4 +308,4 @@ otherwise the custom event may not be included into the experiment result.
   feature, [submit an issue](https://github.com/featbit/featbit-go-sdk/issues/new).
 
 ## See Also
-- [Connect To Go Sdk](https://docs.featbit.co/docs/getting-started/4.-connect-an-sdk/server-side-sdks/go-sdk)
+- [Connect To Go Sdk](https://docs.featbit.co/sdk/overview#go)
