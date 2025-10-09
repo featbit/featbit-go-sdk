@@ -49,3 +49,14 @@ type AllFlagState interface {
 	// The method sends insight events back to feature flag center
 	GetJsonVariation(featureFlagKey string, defaultValue interface{}) (interface{}, EvalDetail, error)
 }
+
+// FeatureFlagMetadata contains feature flag metadata about flag's identifiers and state
+type FeatureFlagMetadata struct {
+	Id            string   `json:"id"`
+	Deleted       bool     `json:"isArchived"`
+	Enabled       bool     `json:"isEnabled"`
+	Name          string   `json:"name"`
+	Key           string   `json:"key"`
+	VariationType string   `json:"variationType"`
+	Tags          []string `json:"tags"`
+}

@@ -3,6 +3,10 @@ package featbit
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
+	"sync"
+	"time"
+
 	"github.com/featbit/featbit-go-sdk/factories"
 	. "github.com/featbit/featbit-go-sdk/interfaces"
 	"github.com/featbit/featbit-go-sdk/internal"
@@ -12,8 +16,6 @@ import (
 	"github.com/featbit/featbit-go-sdk/internal/types/insight"
 	"github.com/featbit/featbit-go-sdk/internal/util"
 	"github.com/featbit/featbit-go-sdk/internal/util/log"
-	"sync"
-	"time"
 )
 
 type FBClient struct {
@@ -46,7 +48,7 @@ var (
 // calling MakeCustomClient with the config parameter set to a default value.
 //
 // Unless it is configured to be offline with FBConfig.Offline, the client will begin attempting to connect to feature flag center as soon as you call this constructor.
-//The constructor will return when it successfully connects, or when the timeout set by the FBConfig.StartWait parameter expires, whichever comes first.
+// The constructor will return when it successfully connects, or when the timeout set by the FBConfig.StartWait parameter expires, whichever comes first.
 //
 // If the timeout(15s) elapsed without a successful connection, it still returns a client instance-- in an initializing state,
 // where feature flags will return default values-- and the error value is initializationTimeout. In this case, it will still continue trying to connect in the background.
@@ -56,21 +58,21 @@ var (
 //
 // The way to monitor the client's status, use FBClient.IsInitialized or FBClient.GetDataUpdateStatusProvider.
 //
-//     client, _ := featbit.NewFBClient(envSecret, streamingUrl, eventUrl)
+//	client, _ := featbit.NewFBClient(envSecret, streamingUrl, eventUrl)
 //
-//     if !client.IsInitialized() {
-//         // do whatever is appropriate if initialization has timed out
-//     }
+//	if !client.IsInitialized() {
+//	    // do whatever is appropriate if initialization has timed out
+//	}
 //
 // If you set FBConfig.StartWait to zero, the function will return immediately after creating the client instance, and do any further initialization in the background.
 //
-//     client, _ := featbit.MakeCustomFBClient(envSecret, streamingUrl, eventUrl, config)
+//	client, _ := featbit.MakeCustomFBClient(envSecret, streamingUrl, eventUrl, config)
 //
-//     // later...
-//     ok := client.GetDataSourceStatusProvider().WaitForOKState(10 * time.Second)
-//     if !ok {
-//         // do whatever is appropriate if initialization has timed out
-//     }
+//	// later...
+//	ok := client.GetDataSourceStatusProvider().WaitForOKState(10 * time.Second)
+//	if !ok {
+//	    // do whatever is appropriate if initialization has timed out
+//	}
 //
 // The only time it returns nil instead of a client instance is if the client cannot be created at all due to
 // an invalid configuration. This is rare, but could happen if for example you specified a custom TLS
@@ -86,7 +88,7 @@ func NewFBClient(envSecret string, streamingUrl string, eventUrl string) (*FBCli
 // fields in FBConfig, while others are set by builder methods on a more specific configuration object. See FBConfig for details.
 //
 // Unless it is configured to be offline with FBConfig.Offline, the client will begin attempting to connect to feature flag center as soon as you call this constructor.
-//The constructor will return when it successfully connects, or when the timeout set by the FBConfig.StartWait parameter expires, whichever comes first.
+// The constructor will return when it successfully connects, or when the timeout set by the FBConfig.StartWait parameter expires, whichever comes first.
 //
 // If the timeout(15s) elapsed without a successful connection, it still returns a client instance-- in an initializing state,
 // where feature flags will return default values-- and the error value is initializationTimeout. In this case, it will still continue trying to connect in the background.
@@ -96,21 +98,21 @@ func NewFBClient(envSecret string, streamingUrl string, eventUrl string) (*FBCli
 //
 // The way to monitor the client's status, use FBClient.IsInitialized or FBClient.GetDataUpdateStatusProvider.
 //
-//     client, _ := featbit.MakeCustomFBClient(envSecret, streamingUrl, eventUrl, config)
+//	client, _ := featbit.MakeCustomFBClient(envSecret, streamingUrl, eventUrl, config)
 //
-//     if !client.IsInitialized() {
-//         // do whatever is appropriate if initialization has timed out
-//     }
+//	if !client.IsInitialized() {
+//	    // do whatever is appropriate if initialization has timed out
+//	}
 //
 // If you set FBConfig.StartWait to zero, the function will return immediately after creating the client instance, and do any further initialization in the background.
 //
-//     client, _ := featbit.MakeCustomFBClient(envSecret, streamingUrl, eventUrl, config)
+//	client, _ := featbit.MakeCustomFBClient(envSecret, streamingUrl, eventUrl, config)
 //
-//     // later...
-//     ok := client.GetDataSourceStatusProvider().WaitForOKState(10 * time.Second)
-//     if !ok {
-//         // do whatever is appropriate if initialization has timed out
-//     }
+//	// later...
+//	ok := client.GetDataSourceStatusProvider().WaitForOKState(10 * time.Second)
+//	if !ok {
+//	    // do whatever is appropriate if initialization has timed out
+//	}
 //
 // The only time it returns nil instead of a client instance is if the client cannot be created at all due to
 // an invalid configuration. This is rare, but could happen if for example you specified a custom TLS
@@ -248,7 +250,7 @@ func (client *FBClient) IsInitialized() bool {
 // Close shuts down the FBClient. After calling this, the FBClient should no longer be used.
 // The method will block until all pending events (if any) been sent.
 func (client *FBClient) Close() error {
-	log.LogInfo("FB GO SDK: Java SDK client is closing")
+	log.LogInfo("FB GO SDK: SDK client is closing")
 	if client.dataStorage != nil {
 		_ = client.dataStorage.Close()
 	}
@@ -530,6 +532,28 @@ func (client *FBClient) AllLatestFlagsVariations(user FBUser) (AllFlagState, err
 		return nil, evalFailed
 	}
 	return ret, nil
+}
+
+// GetAllFlagMetadata function returns metadata for all flags in current environment
+// Feature Flag metadata contains flag identifiers (Name, Key etc.) as well as state info (Deleted, Enabled etc.)
+// Note that tags data are only available in featbit v5.1.1 and later
+func (client *FBClient) GetAllFlagMetadata() ([]FeatureFlagMetadata, error) {
+	var featureList []FeatureFlagMetadata
+	items, err := client.dataStorage.GetAll(data.Features)
+	if err != nil {
+		return featureList, err
+	}
+
+	for _, item := range items {
+		if flag, ok := item.(*data.FeatureFlag); ok {
+			featureList = append(featureList, flag.ToFeatureFlagMetadata())
+		} else if item == nil {
+			log.LogWarn("FB GO SDK: nil feature flag found in data storage, maybe caused by deletion")
+		} else {
+			log.LogError("FB GO SDK: feature flag has a wrong type in data storage: %v, value: %v", reflect.TypeOf(item), item)
+		}
+	}
+	return featureList, nil
 }
 
 // InitializeFromExternalJson initializes FeatBit client in the offline mode

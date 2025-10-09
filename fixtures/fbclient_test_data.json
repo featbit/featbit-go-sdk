@@ -61,7 +61,7 @@
           ]
         },
         "exptIncludeAllTargets": true,
-        "tags": [],
+        "tags": ["testing", "segments", "team-assignment"],
         "isArchived": false,
         "disabledVariation": {
           "id": "f62a3eae-e47f-481c-83eb-1b8fb3c39c9b",
@@ -123,7 +123,7 @@
           ]
         },
         "exptIncludeAllTargets": true,
-        "tags": [],
+        "tags": ["testing", "boolean", "targeted-users", "experiments"],
         "isArchived": false,
         "disabledVariation": {
           "id": "43a1b83b-18df-42a6-971c-b2518455d8f2",
@@ -247,7 +247,7 @@
           ]
         },
         "exptIncludeAllTargets": true,
-        "tags": [],
+        "tags": ["testing", "numeric", "geolocation", "country-based"],
         "isArchived": false,
         "disabledVariation": {
           "id": "d1192640-dd82-4dbe-823e-88d7794b94ee",
@@ -367,7 +367,7 @@
           ]
         },
         "exptIncludeAllTargets": true,
-        "tags": [],
+        "tags": ["testing", "string", "contact-detection", "regex", "validation"],
         "isArchived": false,
         "disabledVariation": {
           "id": "c4ed60ff-d195-415d-a657-3243286673b7",
@@ -421,7 +421,7 @@
           ]
         },
         "exptIncludeAllTargets": true,
-        "tags": [],
+        "tags": ["testing", "json", "lottery", "api-response"],
         "isArchived": false,
         "disabledVariation": {
           "id": "0127cc87-99e2-4c46-98d9-5974a4fa1de1",
@@ -467,7 +467,7 @@
           ]
         },
         "exptIncludeAllTargets": true,
-        "tags": [],
+        "tags": ["testing", "disabled", "boolean", "demo"],
         "isArchived": false,
         "disabledVariation": {
           "id": "628ab219-b397-428b-84ce-a1734046c867",
@@ -720,7 +720,7 @@
           ]
         },
         "exptIncludeAllTargets": true,
-        "tags": [],
+        "tags": ["testing", "complex-rules", "evaluation", "multi-condition", "comprehensive"],
         "isArchived": false,
         "disabledVariation": {
           "id": "ac21c2fc-eec4-4b49-ad80-cc525720166b",

@@ -209,7 +209,7 @@ func (ep *EventProcessor) putMsgToBox(msg insight.EventMessage) bool {
 			// if it reaches here, it means the application is probably doing tons of flag evaluations across many threads.
 			// So if we wait for a space in the inbox, we risk a very serious slowdown of the app.
 			// To avoid that, we'll just drop the event or you can increase the capacity of inbox
-			log.LogWarn("FB JAVA SDK: events are being produced faster than they can be processed; some events will be dropped")
+			log.LogWarn("FB GO SDK: events are being produced faster than they can be processed; some events will be dropped")
 			return false
 		}
 	}

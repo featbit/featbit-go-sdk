@@ -19,6 +19,7 @@ type FeatureFlag struct {
 	TargetUsers           []TargetUser `json:"targetUsers"`
 	Rules                 []TargetRule `json:"rules"`
 	Fallthrough           Fallthrough  `json:"fallthrough"`
+	Tags                  []string     `json:"tags"`
 	timestamp             int64
 	variationMap          map[string]Variation
 }
@@ -69,4 +70,16 @@ func (f *FeatureFlag) GetFlagValue(variationId string) string {
 		return variation.Value
 	}
 	return ""
+}
+
+func (f *FeatureFlag) ToFeatureFlagMetadata() interfaces.FeatureFlagMetadata {
+	return interfaces.FeatureFlagMetadata{
+		Id:            f.Id,
+		Deleted:       f.Deleted,
+		Enabled:       f.Enabled,
+		Name:          f.Name,
+		Key:           f.Key,
+		VariationType: f.VariationType,
+		Tags:          f.Tags,
+	}
 }

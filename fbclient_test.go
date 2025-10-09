@@ -3,6 +3,9 @@ package featbit
 import (
 	"encoding/base64"
 	"encoding/json"
+	"testing"
+	"time"
+
 	"github.com/featbit/featbit-go-sdk/factories"
 	"github.com/featbit/featbit-go-sdk/fixtures"
 	"github.com/featbit/featbit-go-sdk/interfaces"
@@ -12,8 +15,6 @@ import (
 	"github.com/featbit/featbit-go-sdk/internal/types/insight"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
-	"time"
 )
 
 type Dummy struct {
@@ -402,6 +403,83 @@ func TestFBTrackEvent(t *testing.T) {
 		info, _ = sender.GetLatestSendingInfo(200 * time.Millisecond)
 		assert.Equal(t, 1, info.Size())
 		assert.True(t, info.Contains("test-user-2"))
+		_ = client.Close()
+	})
+}
+
+func TestFBClientGetAllFlagMetadata(t *testing.T) {
+	t.Run("success with loaded flags", func(t *testing.T) {
+		config := FBConfig{Offline: true, StartWait: 1 * time.Millisecond}
+		client, _ := MakeCustomFBClient(fakeEnvSecret, "ws://fake-url", "http://fake-url", config)
+		jsonBytes, _ := fixtures.LoadFBClientTestData()
+		initSuccess, initErr := client.InitializeFromExternalJson(string(jsonBytes))
+		require.NoError(t, initErr)
+		assert.True(t, initSuccess)
+
+		metadata, err := client.GetAllFlagMetadata()
+		require.NoError(t, err)
+
+		// Assert we have the expected number of flags
+		assert.Len(t, metadata, 7, "Should have 7 flags loaded from test data")
+
+		// Find a specific flag we know exists in test data and verify its metadata
+		var foundTestFlag bool
+		for _, meta := range metadata {
+			if meta.Key == "ff-test-string" {
+				foundTestFlag = true
+				assert.Equal(t, "ff-test-string", meta.Name)
+				assert.Equal(t, "ff-test-string", meta.Key)
+				assert.Equal(t, "string", meta.VariationType)
+				assert.True(t, meta.Enabled, "ff-test-string should be enabled in test data")
+				assert.False(t, meta.Deleted, "ff-test-string should not be deleted in test data")
+				// Verify ID is not empty
+				assert.NotEmpty(t, meta.Id)
+				// Verify tags
+				expectedTags := []string{"testing", "string", "contact-detection", "regex", "validation"}
+				assert.ElementsMatch(t, expectedTags, meta.Tags, "ff-test-string should have expected tags")
+				break
+			}
+		}
+		assert.True(t, foundTestFlag, "Should find ff-test-string flag in metadata")
+
+		_ = client.Close()
+	})
+
+	t.Run("empty data storage", func(t *testing.T) {
+		config := FBConfig{
+			StartWait:               200 * time.Millisecond,
+			DataStorageFactory:      datastorage.NewMockDataStorageBuilder(),
+			DataSynchronizerFactory: datasynchronization.NewMockStreamingBuilder(true, false, 100*time.Millisecond),
+			InsightProcessorFactory: factories.ExternalEventTrack(),
+		}
+		client, err := MakeCustomFBClient(fakeEnvSecret, "ws://fake-url", "http://fake-url", config)
+		require.NoError(t, err)
+		assert.True(t, client.IsInitialized())
+
+		metadata, err := client.GetAllFlagMetadata()
+		require.NoError(t, err)
+		assert.Empty(t, metadata, "Should return empty slice when no flags are loaded")
+
+		_ = client.Close()
+	})
+
+	t.Run("client not initialized", func(t *testing.T) {
+		config := FBConfig{
+			StartWait:               0,
+			DataStorageFactory:      datastorage.NewMockDataStorageBuilder(),
+			DataSynchronizerFactory: datasynchronization.NewMockStreamingBuilder(true, true, 100*time.Millisecond),
+			InsightProcessorFactory: factories.ExternalEventTrack(),
+		}
+		client, err := MakeCustomFBClient(fakeEnvSecret, "ws://fake-url", "http://fake-url", config)
+		require.NoError(t, err)
+		assert.False(t, client.IsInitialized())
+
+		// Even when client is not initialized, GetAllFlagMetadata should still work
+		// and return empty results if no data is loaded
+		metadata, err := client.GetAllFlagMetadata()
+		require.NoError(t, err)
+		assert.Empty(t, metadata, "Should return empty slice when client not initialized and no data loaded")
+
 		_ = client.Close()
 	})
 }
