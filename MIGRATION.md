@@ -19,7 +19,30 @@ If you use keyed `FBConfig` fields and the default logger, logging configuration
 can remain unchanged. Positional `FBConfig` literals must account for the new
 `Logger` field; switch to keyed fields to avoid that dependency.
 
-## Logging with `log/slog`
+## Logging
+
+`FBConfig.Logger` accepts the public `interfaces.Logger` interface:
+
+```go
+type Logger interface {
+    Log(ctx context.Context, level slog.Level, msg string, args ...any)
+}
+```
+
+Pass any implementation directly through `config.Logger`. The SDK supplies a
+non-nil context, the log level, the message, and structured fields as alternating
+string keys and values. Implementations must support concurrent calls and control
+their own filtering, formatting, and output. Applications can implement this
+interface on their own logger or write an adapter for an existing logging system;
+the SDK does not require a `slog.Handler` or provide router-specific adapters.
+
+The interface uses the standard-library `context` and `log/slog` types, but does
+not require the slog logger implementation. `*slog.Logger` already satisfies it.
+
+See [Custom logger](README.md#custom-logger) for configuration and the
+[runnable adapter example](examples/custom_logger/main.go).
+
+### Using `log/slog`
 
 Pass your application's `*slog.Logger` through `FBConfig.Logger`:
 
@@ -36,15 +59,15 @@ This snippet also requires the standard-library `log/slog` and `os` imports.
 Each client and its background components use the configured logger. Creating
 another client does not replace the first client's logger or level.
 
-- With a non-nil `Logger`, its handler controls filtering, format, and output.
-  `FBConfig.LogLevel` does not override that handler.
+- With a non-nil `Logger`, that implementation controls filtering, format, and
+  output. `FBConfig.LogLevel` does not override it.
 - With a nil `Logger`, the SDK creates a separate `slog.TextHandler` for each
   client, writing to standard output and using `FBConfig.LogLevel`.
 - Default log formatting changes to standard slog `key=value` text. Update any
   log parsers that depend on the previous format.
-- The SDK does not replace `slog.Default()` or close application-owned handlers
-  when the client closes. Custom handlers must support concurrent use as required
-  by slog.
+- The SDK does not replace `slog.Default()` or close application-owned loggers or
+  handlers when the client closes. Custom loggers must support concurrent use;
+  with slog, this requirement also applies to the handler.
 
 Existing `LogLevel` constants keep their numeric values. They are mapped to
 slog levels when creating the default handler:
@@ -57,8 +80,9 @@ slog levels when creating the default handler:
 | `featbit.WARN` | 1 | `slog.LevelWarn` (4) |
 | `featbit.ERROR` | 2 | `slog.LevelError` (8) |
 
-Use `featbit.LevelTrace` as the handler threshold to include trace logs from a
-custom logger. Do not cast the legacy integer constants to `slog.Level`: their
+For a custom implementation, handle `featbit.LevelTrace` (-8) to support trace
+records. With slog, use it as the handler threshold to include trace logs.
+Do not cast the legacy integer constants to `slog.Level`: their
 numeric scales differ. The default SDK handler labels trace records `TRACE`.
 A plain slog handler renders that level as `DEBUG-4`;
 use the handler's `ReplaceAttr` option if your output requires a `TRACE` label.
@@ -70,7 +94,7 @@ Factories can optionally access the client's logger by checking the additional
 `interfaces.LoggerProvider` interface:
 
 ```go
-logger := slog.Default()
+var logger interfaces.Logger = slog.Default()
 if provider, ok := ctx.(interfaces.LoggerProvider); ok {
     if configured := provider.GetLogger(); configured != nil {
         logger = configured

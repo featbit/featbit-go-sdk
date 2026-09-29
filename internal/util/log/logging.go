@@ -11,7 +11,7 @@ import (
 const LevelTrace = slog.Level(-8)
 
 // NewDefault creates a separate handler for each client. The integer levels
-// retain the v1 FBConfig.LogLevel values; custom loggers use their own handlers.
+// retain the v1 FBConfig.LogLevel values; custom loggers control their own filtering.
 func NewDefault(level int) *slog.Logger {
 	var threshold slog.Level
 	switch {
@@ -38,7 +38,7 @@ func NewDefault(level int) *slog.Logger {
 }
 
 // OrDiscard lets standalone internal components operate without a logger.
-func OrDiscard(logger *slog.Logger) *slog.Logger {
+func OrDiscard(logger interfaces.Logger) interfaces.Logger {
 	if logger == nil {
 		return slog.New(slog.DiscardHandler)
 	}
@@ -47,7 +47,7 @@ func OrDiscard(logger *slog.Logger) *slog.Logger {
 
 // FromContext supports existing custom Context implementations without adding
 // a required method to that public interface.
-func FromContext(ctx interfaces.Context) *slog.Logger {
+func FromContext(ctx interfaces.Context) interfaces.Logger {
 	if provider, ok := ctx.(interfaces.LoggerProvider); ok {
 		return OrDiscard(provider.GetLogger())
 	}

@@ -2,7 +2,9 @@ package insight
 
 import (
 	"bytes"
+	"context"
 	"fmt"
+	"github.com/featbit/featbit-go-sdk/v2/interfaces"
 	"github.com/featbit/featbit-go-sdk/v2/internal/util/log"
 	"io/ioutil"
 	"log/slog"
@@ -13,14 +15,14 @@ import (
 var invalidInput = fmt.Errorf("invalid url or json")
 
 type EventSenderImp struct {
-	logger        *slog.Logger
+	logger        interfaces.Logger
 	client        *http.Client
 	headers       http.Header
 	retryInterval time.Duration
 	maxRetryTimes int
 }
 
-func NewEventSenderImp(client *http.Client, headers http.Header, retryInterval time.Duration, maxRetryTimes int, loggers ...*slog.Logger) *EventSenderImp {
+func NewEventSenderImp(client *http.Client, headers http.Header, retryInterval time.Duration, maxRetryTimes int, loggers ...interfaces.Logger) *EventSenderImp {
 	logger := log.FromContext(nil)
 	if len(loggers) > 0 && loggers[0] != nil {
 		logger = loggers[0]
@@ -53,7 +55,7 @@ func (e *EventSenderImp) PostJson(uri string, jsonBytes []byte) ([]byte, error) 
 
 		req, reqErr := http.NewRequest("POST", uri, bytes.NewReader(jsonBytes))
 		if reqErr != nil {
-			e.logger.Error("FB GO SDK: events sending error", "error", reqErr)
+			e.logger.Log(context.Background(), slog.LevelError, "FB GO SDK: events sending error", "error", reqErr)
 			return nil, reqErr
 		}
 		req.Header = headers
@@ -64,11 +66,11 @@ func (e *EventSenderImp) PostJson(uri string, jsonBytes []byte) ([]byte, error) 
 			_ = resp.Body.Close()
 		}
 		if respErr != nil {
-			e.logger.Error("FB GO SDK: events sending error", "error", respErr)
+			e.logger.Log(context.Background(), slog.LevelError, "FB GO SDK: events sending error", "error", respErr)
 			continue
 		}
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-			e.logger.Debug("sending events ok")
+			e.logger.Log(context.Background(), slog.LevelDebug, "sending events ok")
 			return nil, nil
 		}
 	}

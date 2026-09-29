@@ -1,6 +1,7 @@
 package featbit
 
 import (
+	"context"
 	. "github.com/featbit/featbit-go-sdk/v2/interfaces"
 	"github.com/featbit/featbit-go-sdk/v2/internal/types/data"
 	"github.com/featbit/featbit-go-sdk/v2/internal/util/log"
@@ -45,15 +46,15 @@ const (
 )
 
 type evaluator struct {
-	logger     *slog.Logger
+	logger     Logger
 	getFlag    func(key string) *data.FeatureFlag
 	getSegment func(key string) *data.Segment
 	funcSlice  []func(*data.FeatureFlag, *FBUser) (*evalResult, bool)
 }
 
 func newEvaluator(getFlag func(key string) *data.FeatureFlag,
-	getSegment func(key string) *data.Segment, loggers ...*slog.Logger) *evaluator {
-	var logger *slog.Logger
+	getSegment func(key string) *data.Segment, loggers ...Logger) *evaluator {
+	var logger Logger
 	if len(loggers) > 0 {
 		logger = loggers[0]
 	}
@@ -71,7 +72,7 @@ func newEvaluator(getFlag func(key string) *data.FeatureFlag,
 func (e *evaluator) evaluate(flag *data.FeatureFlag, user *FBUser, event Event) (er *evalResult) {
 	defer func() {
 		if er.success {
-			e.logger.Info("FB Go SDK: feature flag evaluated", "user_key", user.GetKey(), "flag_key", flag.Key, "value", er.fv)
+			e.logger.Log(context.Background(), slog.LevelInfo, "FB Go SDK: feature flag evaluated", "user_key", user.GetKey(), "flag_key", flag.Key, "value", er.fv)
 			if event != nil {
 				eventFlag := er.toEventFlag()
 				event.Add(eventFlag)

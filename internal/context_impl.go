@@ -2,7 +2,6 @@ package internal
 
 import (
 	. "github.com/featbit/featbit-go-sdk/v2/interfaces"
-	"log/slog"
 	"strings"
 )
 
@@ -16,11 +15,11 @@ type SDKContext struct {
 	streamingUrl string
 	eventUrl     string
 	network      Network
-	logger       *slog.Logger
+	logger       Logger
 }
 
-func FromConfig(envSecret string, streamingUrl string, eventUrl string, factory NetworkFactory, loggers ...*slog.Logger) (*SDKContext, error) {
-	var logger *slog.Logger
+func FromConfig(envSecret string, streamingUrl string, eventUrl string, factory NetworkFactory, loggers ...Logger) (*SDKContext, error) {
+	var logger Logger
 	if len(loggers) > 0 {
 		logger = loggers[0]
 	}
@@ -32,7 +31,7 @@ func FromConfig(envSecret string, streamingUrl string, eventUrl string, factory 
 	return ctx, err
 }
 
-func (c *SDKContext) GetLogger() *slog.Logger {
+func (c *SDKContext) GetLogger() Logger {
 	return c.logger
 }
 

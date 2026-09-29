@@ -1,7 +1,9 @@
 package datasynchronization
 
 import (
+	"context"
 	realRand "crypto/rand"
+	"github.com/featbit/featbit-go-sdk/v2/interfaces"
 	"github.com/featbit/featbit-go-sdk/v2/internal/util/log"
 	"log/slog"
 	"math"
@@ -11,7 +13,7 @@ import (
 )
 
 type BackoffAndJitterStrategy struct {
-	logger          *slog.Logger
+	logger          interfaces.Logger
 	firstRetryDelay time.Duration
 	maxRetryDelay   time.Duration
 	resetInterval   time.Duration
@@ -20,7 +22,7 @@ type BackoffAndJitterStrategy struct {
 	lastGoodRun     time.Time
 }
 
-func NewWithFirstRetryDelay(firstRetryDelay time.Duration, loggers ...*slog.Logger) *BackoffAndJitterStrategy {
+func NewWithFirstRetryDelay(firstRetryDelay time.Duration, loggers ...interfaces.Logger) *BackoffAndJitterStrategy {
 	logger := log.FromContext(nil)
 	if len(loggers) > 0 && loggers[0] != nil {
 		logger = loggers[0]
@@ -62,6 +64,6 @@ func (b *BackoffAndJitterStrategy) NextDelay() time.Duration {
 	delay := (jitterTime + backOff/2) * 1000
 	b.retryCount += 1
 	millis := time.Duration(int64(math.Floor(delay))) * time.Millisecond
-	b.logger.Info("backoff before retry", "backoff_seconds", backOff, "jitter_seconds", jitterTime, "delay", millis)
+	b.logger.Log(context.Background(), slog.LevelInfo, "backoff before retry", "backoff_seconds", backOff, "jitter_seconds", jitterTime, "delay", millis)
 	return millis
 }

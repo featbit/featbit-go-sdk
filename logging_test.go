@@ -2,6 +2,7 @@ package featbit
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,6 +13,108 @@ import (
 	"testing"
 	"time"
 )
+
+type interfaceLogRecord struct {
+	ctx     context.Context
+	level   slog.Level
+	message string
+	args    []any
+}
+
+// This implementation has no slog.Logger or slog.Handler. Its only logging
+// method is the public Logger contract's Log method.
+type interfaceTestLogger struct {
+	mu      sync.Mutex
+	records []interfaceLogRecord
+}
+
+func (l *interfaceTestLogger) Log(ctx context.Context, level slog.Level, msg string, args ...any) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.records = append(l.records, interfaceLogRecord{ctx, level, msg, append([]any(nil), args...)})
+}
+
+func (l *interfaceTestLogger) snapshot() []interfaceLogRecord {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return append([]interfaceLogRecord(nil), l.records...)
+}
+
+func TestClientAcceptsLoggerInterface(t *testing.T) {
+	logger := &interfaceTestLogger{}
+	// A custom implementation owns filtering, including with legacy ERROR set.
+	client := newLoggingTestClient(t, FBConfig{Logger: logger, LogLevel: ERROR})
+	initializeLoggingTestData(t, client)
+	if _, _, err := client.BoolVariation("missing", testUser1, false); err == nil {
+		t.Fatal("missing flag should return an error")
+	}
+	if _, _, err := client.JsonVariation("malformed-json", testUser1, map[string]interface{}{}); err == nil {
+		t.Fatal("malformed JSON variation should return an error")
+	}
+
+	levels := make(map[slog.Level]bool)
+	var sawFlagKey, sawError bool
+	for _, record := range logger.snapshot() {
+		if record.ctx == nil {
+			t.Error("SDK supplied a nil logging context")
+		}
+		levels[record.level] = true
+		if len(record.args)%2 != 0 {
+			t.Errorf("SDK fields are not key-value pairs: %v", record.args)
+			continue
+		}
+		for i := 0; i < len(record.args); i += 2 {
+			key, ok := record.args[i].(string)
+			if !ok {
+				t.Errorf("SDK field key is not a string: %v", record.args[i])
+			}
+			if record.level == slog.LevelWarn && key == "flag_key" && record.args[i+1] == "missing" {
+				sawFlagKey = true
+			}
+			if key == "error" {
+				if err, ok := record.args[i+1].(error); ok && err != nil {
+					sawError = true
+				}
+			}
+		}
+	}
+	for _, level := range []slog.Level{slog.LevelInfo, slog.LevelWarn, slog.LevelError} {
+		if !levels[level] {
+			t.Errorf("custom logger did not receive %s records", level)
+		}
+	}
+	if !sawFlagKey || !sawError {
+		t.Errorf("custom logger lost structured fields: flag_key=%v, error=%v", sawFlagKey, sawError)
+	}
+}
+
+func TestClientLoggerInterfaceConcurrentCalls(t *testing.T) {
+	logger := &interfaceTestLogger{}
+	client := newLoggingTestClient(t, FBConfig{Logger: logger})
+	initializeLoggingTestData(t, client)
+	const workers = 8
+	const evaluationsPerWorker = 10
+	var wg sync.WaitGroup
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < evaluationsPerWorker; j++ {
+				_, _, _ = client.BoolVariation("missing", testUser1, false)
+			}
+		}()
+	}
+	wg.Wait()
+	warnings := 0
+	for _, record := range logger.snapshot() {
+		if record.level == slog.LevelWarn {
+			warnings++
+		}
+	}
+	if want := workers * evaluationsPerWorker; warnings != want {
+		t.Errorf("shared client logged %d warnings, want %d", warnings, want)
+	}
+}
 
 const loggingTestData = `{
 	"messageType": "data-sync",

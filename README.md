@@ -80,6 +80,38 @@ func main() {
 
 - [Go Demo](https://github.com/featbit/featbit-samples/blob/main/samples/dino-game/demo-golang/go_demo.go)
 
+### Custom logger
+
+Set `FBConfig.Logger` to your existing `*slog.Logger` or any implementation of
+[`interfaces.Logger`](interfaces/logger.go):
+
+```go
+config := *featbit.DefaultFBConfig
+config.Logger = myLogger
+client, err := featbit.MakeCustomFBClient(envSecret, streamingURL, eventURL, config)
+```
+
+A custom logger or adapter needs one method:
+
+```go
+type Logger interface {
+    Log(ctx context.Context, level slog.Level, msg string, args ...any)
+}
+```
+
+Your logger controls levels, format, and output, and must support concurrent
+calls. `FBConfig.LogLevel` only applies to the default logger used when `Logger`
+is nil.
+
+See the [adapter example](examples/custom_logger/main.go), which forwards SDK logs
+to `log.Logger`. Run it offline from the repository root:
+
+```shell
+go run ./examples/custom_logger
+```
+
+See [Logging details](MIGRATION.md#logging) for structured fields and trace levels.
+
 ### FBClient
 
 Applications **SHOULD instantiate a single FBClient instance** for the lifetime of the application. In the case where an application

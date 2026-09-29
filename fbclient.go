@@ -1,6 +1,7 @@
 package featbit
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -20,7 +21,7 @@ import (
 )
 
 type FBClient struct {
-	logger                   *slog.Logger
+	logger                   Logger
 	offline                  bool
 	dataStorage              DataStorage
 	dataSynchronizer         DataSynchronizer
@@ -131,7 +132,7 @@ func MakeCustomFBClient(envSecret string, streamingUrl string, eventUrl string, 
 			return nil, hostInvalid
 		}
 	} else {
-		logger.Info("FB GO SDK: SDK is in offline mode")
+		logger.Log(context.Background(), slog.LevelInfo, "FB GO SDK: SDK is in offline mode")
 	}
 	networkFactory := config.NetworkFactory
 	if networkFactory == nil {
@@ -208,27 +209,27 @@ func MakeCustomFBClient(envSecret string, streamingUrl string, eventUrl string, 
 	ready := client.dataSynchronizer.Start()
 	if config.StartWait > 0 {
 		if _, ok := client.dataSynchronizer.(*datasynchronization.NullDataSynchronizer); !ok {
-			logger.Info("FB GO SDK: waiting for Client initialization", "timeout_ms", config.StartWait/time.Millisecond)
+			logger.Log(context.Background(), slog.LevelInfo, "FB GO SDK: waiting for Client initialization", "timeout_ms", config.StartWait/time.Millisecond)
 		}
 		select {
 		case <-ready:
 			if !client.dataUpdater.StorageInitialized() && !config.Offline {
-				logger.Warn("FB GO SDK: SDK just returns default variation because of no data found in the given environment")
+				logger.Log(context.Background(), slog.LevelWarn, "FB GO SDK: SDK just returns default variation because of no data found in the given environment")
 			}
 			if !client.dataSynchronizer.IsInitialized() {
-				logger.Warn("FB GO SDK: SDK was not successfully initialized")
+				logger.Log(context.Background(), slog.LevelWarn, "FB GO SDK: SDK was not successfully initialized")
 				return client, initializationFailed
 			}
 			return client, nil
 		case <-time.After(config.StartWait):
-			logger.Warn("FB GO SDK: timeout encountered when waiting for data update")
+			logger.Log(context.Background(), slog.LevelWarn, "FB GO SDK: timeout encountered when waiting for data update")
 			// it's rare, but prevent to block data synchronizer without waiting for termination of initialization
 			go func() { <-ready }()
 			return client, initializationTimeout
 		}
 
 	}
-	logger.Info("FB GO SDK: SDK starts in asynchronous mode")
+	logger.Log(context.Background(), slog.LevelInfo, "FB GO SDK: SDK starts in asynchronous mode")
 	go func() { <-ready }()
 	return client, nil
 }
@@ -254,7 +255,7 @@ func (client *FBClient) IsInitialized() bool {
 // Close shuts down the FBClient. After calling this, the FBClient should no longer be used.
 // The method will block until all pending events (if any) been sent.
 func (client *FBClient) Close() error {
-	log.OrDiscard(client.logger).Info("FB GO SDK: SDK client is closing")
+	log.OrDiscard(client.logger).Log(context.Background(), slog.LevelInfo, "FB GO SDK: SDK client is closing")
 	if client.dataStorage != nil {
 		_ = client.dataStorage.Close()
 	}
@@ -383,17 +384,17 @@ func (client *FBClient) Flush() error {
 // evaluateInternal internal use for evaluate flag value
 func (client *FBClient) evaluateInternal(featureFlagKey string, user *FBUser, requiredType string) (*evalResult, error) {
 	if !client.IsInitialized() {
-		log.OrDiscard(client.logger).Warn("FB GO SDK: evaluation is called before GO SDK client is initialized for feature flag, well using the default value")
+		log.OrDiscard(client.logger).Log(context.Background(), slog.LevelWarn, "FB GO SDK: evaluation is called before GO SDK client is initialized for feature flag, well using the default value")
 		return errorResult(ReasonClientNotReady, featureFlagKey, FlagNameUnknown), clientNotInitialized
 	}
 	flag := client.getFlag(featureFlagKey)
 	if flag == nil {
-		log.OrDiscard(client.logger).Warn("FB Go SDK: unknown feature flag; returning default value", "flag_key", featureFlagKey)
+		log.OrDiscard(client.logger).Log(context.Background(), slog.LevelWarn, "FB Go SDK: unknown feature flag; returning default value", "flag_key", featureFlagKey)
 		return errorResult(ReasonFlagNotFound, featureFlagKey, FlagNameUnknown), flagNotFound
 
 	}
 	if !user.IsValid() {
-		log.OrDiscard(client.logger).Warn("FB GO SDK: invalid user for feature flag, returning default value", "flag_key", featureFlagKey)
+		log.OrDiscard(client.logger).Log(context.Background(), slog.LevelWarn, "FB GO SDK: invalid user for feature flag, returning default value", "flag_key", featureFlagKey)
 		return errorResult(ReasonUserNotSpecified, featureFlagKey, FlagNameUnknown), userInvalid
 	}
 	eventUser := insight.ConvertFBUserToEventUser(user)
@@ -406,7 +407,7 @@ func (client *FBClient) evaluateInternal(featureFlagKey string, user *FBUser, re
 		client.sendEvent(event)
 		return er, nil
 	}
-	log.OrDiscard(client.logger).Error("FB GO SDK: unexpected error in evaluation")
+	log.OrDiscard(client.logger).Log(context.Background(), slog.LevelError, "FB GO SDK: unexpected error in evaluation")
 	return errorResult(ReasonError, featureFlagKey, flag.Name), evalFailed
 }
 
@@ -496,11 +497,11 @@ func (client *FBClient) JsonVariation(featureFlagKey string, user FBUser, defaul
 // This method does not send insight events back to feature flag center. See interfaces.AllFlagState
 func (client *FBClient) AllLatestFlagsVariations(user FBUser) (AllFlagState, error) {
 	if !client.IsInitialized() {
-		log.OrDiscard(client.logger).Warn("FB GO SDK: evaluation is called before GO SDK client is initialized for feature flag, well using the default value")
+		log.OrDiscard(client.logger).Log(context.Background(), slog.LevelWarn, "FB GO SDK: evaluation is called before GO SDK client is initialized for feature flag, well using the default value")
 		return &allFlagStateImpl{reason: ReasonClientNotReady}, clientNotInitialized
 	}
 	if !user.IsValid() {
-		log.OrDiscard(client.logger).Warn("FB GO SDK: invalid user")
+		log.OrDiscard(client.logger).Log(context.Background(), slog.LevelWarn, "FB GO SDK: invalid user")
 		return &allFlagStateImpl{reason: ReasonUserNotSpecified}, userInvalid
 	}
 	items, err := client.dataStorage.GetAll(data.Features)
@@ -531,7 +532,7 @@ func (client *FBClient) AllLatestFlagsVariations(user FBUser) (AllFlagState, err
 		}
 	}
 	if !ret.success {
-		log.OrDiscard(client.logger).Error("FB GO SDK: unexpected error in evaluation")
+		log.OrDiscard(client.logger).Log(context.Background(), slog.LevelError, "FB GO SDK: unexpected error in evaluation")
 		ret.reason = ReasonError
 		return nil, evalFailed
 	}
@@ -552,9 +553,9 @@ func (client *FBClient) GetAllFlagMetadata() ([]FeatureFlagMetadata, error) {
 		if flag, ok := item.(*data.FeatureFlag); ok {
 			featureList = append(featureList, flag.ToFeatureFlagMetadata())
 		} else if item == nil {
-			log.OrDiscard(client.logger).Warn("FB GO SDK: nil feature flag found in data storage, maybe caused by deletion")
+			log.OrDiscard(client.logger).Log(context.Background(), slog.LevelWarn, "FB GO SDK: nil feature flag found in data storage, maybe caused by deletion")
 		} else {
-			log.OrDiscard(client.logger).Error("FB GO SDK: feature flag has a wrong type in data storage", "type", reflect.TypeOf(item), "value", item)
+			log.OrDiscard(client.logger).Log(context.Background(), slog.LevelError, "FB GO SDK: feature flag has a wrong type in data storage", "type", reflect.TypeOf(item), "value", item)
 		}
 	}
 	return featureList, nil

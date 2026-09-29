@@ -2,6 +2,7 @@ package factories_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -70,10 +71,10 @@ func (c legacyComponentContext) GetNetwork() interfaces.Network { return c.netwo
 
 type loggingComponentContext struct {
 	interfaces.Context
-	logger *slog.Logger
+	logger interfaces.Logger
 }
 
-func (c loggingComponentContext) GetLogger() *slog.Logger { return c.logger }
+func (c loggingComponentContext) GetLogger() interfaces.Logger { return c.logger }
 
 type testComponents struct {
 	stream    interfaces.DataSynchronizer
@@ -81,7 +82,7 @@ type testComponents struct {
 	sent      <-chan struct{}
 }
 
-func newTestComponents(t *testing.T, logger *slog.Logger) testComponents {
+func newTestComponents(t *testing.T, logger interfaces.Logger) testComponents {
 	t.Helper()
 	sent := make(chan struct{}, 1)
 	var ctx interfaces.Context = legacyComponentContext{network: componentTestNetwork{
@@ -169,4 +170,37 @@ func TestBuiltInFactoriesKeepConcurrentComponentLoggersSeparate(t *testing.T) {
 
 func TestBuiltInFactoriesAcceptContextWithoutLoggerProvider(t *testing.T) {
 	exerciseComponents(t, newTestComponents(t, nil))
+}
+
+type componentLoggerFunc func(context.Context, slog.Level, string, ...any)
+
+func (f componentLoggerFunc) Log(ctx context.Context, level slog.Level, msg string, args ...any) {
+	f(ctx, level, msg, args...)
+}
+
+func TestBuiltInFactoriesAcceptLoggerInterface(t *testing.T) {
+	var mu sync.Mutex
+	messages := make(map[string]slog.Level)
+	logger := componentLoggerFunc(func(ctx context.Context, level slog.Level, msg string, args ...any) {
+		if ctx == nil {
+			t.Error("background component supplied a nil logging context")
+		}
+		mu.Lock()
+		defer mu.Unlock()
+		messages[msg] = level
+	})
+	exerciseComponents(t, newTestComponents(t, logger))
+	mu.Lock()
+	defer mu.Unlock()
+	for message, wantLevel := range map[string]slog.Level{
+		"FB GO SDK: streaming is stopping":         slog.LevelInfo,
+		"event dispatcher is working":              slog.LevelDebug,
+		"sending event payload":                    slog.LevelDebug,
+		"sending events ok":                        slog.LevelDebug,
+		"FB GO SDK: insight processor is stopping": slog.LevelInfo,
+	} {
+		if level, ok := messages[message]; !ok || level != wantLevel {
+			t.Errorf("custom logger received %q at level %v (present=%v), want %v", message, level, ok, wantLevel)
+		}
+	}
 }

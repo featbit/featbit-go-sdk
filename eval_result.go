@@ -1,6 +1,7 @@
 package featbit
 
 import (
+	"context"
 	"encoding/json"
 	. "github.com/featbit/featbit-go-sdk/v2/interfaces"
 	"github.com/featbit/featbit-go-sdk/v2/internal/types/insight"
@@ -11,7 +12,7 @@ import (
 )
 
 type allFlagStateImpl struct {
-	logger    *slog.Logger
+	logger    Logger
 	success   bool
 	reason    string
 	states    map[string]map[evalResult]*insight.FlagEvent
@@ -131,7 +132,7 @@ func (er *evalResult) checkType(requiredType string) bool {
 	return false
 }
 
-func (er *evalResult) castVariationByFlagType(requiredType string, defaultValue interface{}, logger *slog.Logger) (EvalDetail, error) {
+func (er *evalResult) castVariationByFlagType(requiredType string, defaultValue interface{}, logger Logger) (EvalDetail, error) {
 	switch requiredType {
 	case FlagBoolType:
 		b, _ := strconv.ParseBool(er.fv)
@@ -147,7 +148,7 @@ func (er *evalResult) castVariationByFlagType(requiredType string, defaultValue 
 		t := reflect.TypeOf(defaultValue)
 		inf := reflect.New(t).Interface()
 		if err := json.Unmarshal([]byte(er.fv), inf); err != nil {
-			log.OrDiscard(logger).Error("FB GO SDK: unexpected error in parsing json, use default value", "error", err, "flag_key", er.keyName)
+			log.OrDiscard(logger).Log(context.Background(), slog.LevelError, "FB GO SDK: unexpected error in parsing json, use default value", "error", err, "flag_key", er.keyName)
 			return EvalDetail{Variation: defaultValue, Reason: er.reason, KeyName: er.keyName, Name: er.name}, err
 		}
 		inf = reflect.ValueOf(inf).Elem().Interface()
