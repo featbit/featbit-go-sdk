@@ -2,7 +2,7 @@ package data
 
 import (
 	"encoding/json"
-	"github.com/featbit/featbit-go-sdk/interfaces"
+	"github.com/featbit/featbit-go-sdk/v2/interfaces"
 	"time"
 )
 

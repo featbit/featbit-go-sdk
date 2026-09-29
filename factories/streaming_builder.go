@@ -2,8 +2,8 @@ package factories
 
 import (
 	"fmt"
-	. "github.com/featbit/featbit-go-sdk/interfaces"
-	"github.com/featbit/featbit-go-sdk/internal/datasynchronization"
+	. "github.com/featbit/featbit-go-sdk/v2/interfaces"
+	"github.com/featbit/featbit-go-sdk/v2/internal/datasynchronization"
 	"github.com/gorilla/websocket"
 	"math"
 	"time"

@@ -2,7 +2,6 @@ package util
 
 import (
 	"fmt"
-	"github.com/featbit/featbit-go-sdk/internal/util/log"
 	"io/ioutil"
 	"math"
 	"math/rand"
@@ -17,7 +16,6 @@ import (
 func ReadFile(file string) ([]byte, error) {
 	f, err := os.Open(file)
 	if err != nil {
-		log.LogError("FB GO SDK: error loading file %s - %v", file, err)
 		return []byte(nil), err
 	}
 	defer func(f *os.File) {
@@ -26,7 +24,6 @@ func ReadFile(file string) ([]byte, error) {
 
 	fd, err := ioutil.ReadAll(f)
 	if err != nil {
-		log.LogError("FB GO SDK: error loading file %s - %v", file, err)
 		return []byte(nil), err
 	}
 	return fd, nil

@@ -2,9 +2,9 @@ package featbit
 
 import (
 	"encoding/json"
-	. "github.com/featbit/featbit-go-sdk/interfaces"
-	"github.com/featbit/featbit-go-sdk/internal/types/data"
-	"github.com/featbit/featbit-go-sdk/internal/util"
+	. "github.com/featbit/featbit-go-sdk/v2/interfaces"
+	"github.com/featbit/featbit-go-sdk/v2/internal/types/data"
+	"github.com/featbit/featbit-go-sdk/v2/internal/util"
 	"regexp"
 	"strconv"
 	"strings"

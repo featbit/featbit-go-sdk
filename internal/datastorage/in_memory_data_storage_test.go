@@ -1,8 +1,8 @@
 package datastorage
 
 import (
-	. "github.com/featbit/featbit-go-sdk/interfaces"
-	"github.com/featbit/featbit-go-sdk/internal/types/data"
+	. "github.com/featbit/featbit-go-sdk/v2/interfaces"
+	"github.com/featbit/featbit-go-sdk/v2/internal/types/data"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -11,6 +11,15 @@ import (
 var item1 = data.NewTestItem(false)
 var item2 = data.NewTestItem(false)
 var item3 = data.NewTestItem(true)
+
+// Replacing an item requires a strictly newer timestamp. Consecutive calls to
+// time.Now in the test fixture can return the same value on some platforms.
+type timestampedTestItem struct {
+	Item
+	timestamp int64
+}
+
+func (item timestampedTestItem) GetTimestamp() int64 { return item.timestamp }
 
 func TestInit(t *testing.T) {
 	t.Run("default version", func(t *testing.T) {
@@ -75,7 +84,7 @@ func TestUpsert(t *testing.T) {
 		assert.Equal(t, int64(2), dataStorage.GetVersion())
 		item, _ = dataStorage.Get(data.Datatests, item2.GetId())
 		assert.Equal(t, item2, item)
-		newItem := data.NewTestItem(false)
+		newItem := timestampedTestItem{Item: data.NewTestItem(false), timestamp: item1.GetTimestamp() + 1}
 		ok, err = dataStorage.Upsert(data.Datatests, item1.GetId(), newItem, int64(3))
 		assert.True(t, ok)
 		require.NoError(t, err)

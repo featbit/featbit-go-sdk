@@ -2,8 +2,9 @@ package factories
 
 import (
 	"fmt"
-	. "github.com/featbit/featbit-go-sdk/interfaces"
-	"github.com/featbit/featbit-go-sdk/internal/insight"
+	. "github.com/featbit/featbit-go-sdk/v2/interfaces"
+	"github.com/featbit/featbit-go-sdk/v2/internal/insight"
+	"github.com/featbit/featbit-go-sdk/v2/internal/util/log"
 	"net/http"
 	"time"
 )
@@ -106,7 +107,7 @@ func (i *InsightProcessorBuilder) CreateInsightEventSender(context Context) (Sen
 	if maxRetryTimes > 3 {
 		maxRetryTimes = 3
 	}
-	return insight.NewEventSenderImp(client, headers, retryInterval, maxRetryTimes), nil
+	return insight.NewEventSenderImp(client, headers, retryInterval, maxRetryTimes, log.FromContext(context)), nil
 }
 
 type nullInsightProcessorBuilder struct{}

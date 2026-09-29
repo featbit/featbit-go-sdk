@@ -2,9 +2,12 @@ package insight
 
 import (
 	"bytes"
+	"context"
 	"fmt"
-	"github.com/featbit/featbit-go-sdk/internal/util/log"
+	"github.com/featbit/featbit-go-sdk/v2/interfaces"
+	"github.com/featbit/featbit-go-sdk/v2/internal/util/log"
 	"io/ioutil"
+	"log/slog"
 	"net/http"
 	"time"
 )
@@ -12,14 +15,19 @@ import (
 var invalidInput = fmt.Errorf("invalid url or json")
 
 type EventSenderImp struct {
+	logger        interfaces.Logger
 	client        *http.Client
 	headers       http.Header
 	retryInterval time.Duration
 	maxRetryTimes int
 }
 
-func NewEventSenderImp(client *http.Client, headers http.Header, retryInterval time.Duration, maxRetryTimes int) *EventSenderImp {
-	return &EventSenderImp{client: client, headers: headers, retryInterval: retryInterval, maxRetryTimes: maxRetryTimes}
+func NewEventSenderImp(client *http.Client, headers http.Header, retryInterval time.Duration, maxRetryTimes int, loggers ...interfaces.Logger) *EventSenderImp {
+	logger := log.FromContext(nil)
+	if len(loggers) > 0 && loggers[0] != nil {
+		logger = loggers[0]
+	}
+	return &EventSenderImp{logger: logger, client: client, headers: headers, retryInterval: retryInterval, maxRetryTimes: maxRetryTimes}
 }
 
 func (e *EventSenderImp) PostJson(uri string, jsonBytes []byte) ([]byte, error) {
@@ -47,7 +55,7 @@ func (e *EventSenderImp) PostJson(uri string, jsonBytes []byte) ([]byte, error) 
 
 		req, reqErr := http.NewRequest("POST", uri, bytes.NewReader(jsonBytes))
 		if reqErr != nil {
-			log.LogError("FB GO SDK: events sending error: %v", reqErr.Error())
+			e.logger.Log(context.Background(), slog.LevelError, "FB GO SDK: events sending error", "error", reqErr)
 			return nil, reqErr
 		}
 		req.Header = headers
@@ -58,11 +66,11 @@ func (e *EventSenderImp) PostJson(uri string, jsonBytes []byte) ([]byte, error) 
 			_ = resp.Body.Close()
 		}
 		if respErr != nil {
-			log.LogError("FB GO SDK: events sending error: %v", respErr.Error())
+			e.logger.Log(context.Background(), slog.LevelError, "FB GO SDK: events sending error", "error", respErr)
 			continue
 		}
 		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-			log.LogDebug("sending events ok")
+			e.logger.Log(context.Background(), slog.LevelDebug, "sending events ok")
 			return nil, nil
 		}
 	}

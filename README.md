@@ -19,12 +19,14 @@ If you want to use your own data source, see [Offline Mode](#offline-mode).
 
 ## Get Started
 
-Go Server Side SDK is based on go 1.13, so you need to install go 1.13 or above.
+This branch contains unreleased v2 work and requires Go 1.26.0 or later. See [Migrating from v1 to v2](MIGRATION.md) for import and logging changes.
 
 ### Installation
 
+After the v2 branch is published, install its development version with:
+
 ```
-go get github.com/featbit/featbit-go-sdk
+go get github.com/featbit/featbit-go-sdk/v2@v2
 ```
 
 ### Prerequisite
@@ -46,8 +48,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/featbit/featbit-go-sdk"
-	"github.com/featbit/featbit-go-sdk/interfaces"
+	"github.com/featbit/featbit-go-sdk/v2"
+	"github.com/featbit/featbit-go-sdk/v2/interfaces"
 )
 
 func main() {
@@ -77,6 +79,38 @@ func main() {
 ### Examples
 
 - [Go Demo](https://github.com/featbit/featbit-samples/blob/main/samples/dino-game/demo-golang/go_demo.go)
+
+### Custom logger
+
+Set `FBConfig.Logger` to your existing `*slog.Logger` or any implementation of
+[`interfaces.Logger`](interfaces/logger.go):
+
+```go
+config := *featbit.DefaultFBConfig
+config.Logger = myLogger
+client, err := featbit.MakeCustomFBClient(envSecret, streamingURL, eventURL, config)
+```
+
+A custom logger or adapter needs one method:
+
+```go
+type Logger interface {
+    Log(ctx context.Context, level slog.Level, msg string, args ...any)
+}
+```
+
+Your logger controls levels, format, and output, and must support concurrent
+calls. `FBConfig.LogLevel` only applies to the default logger used when `Logger`
+is nil.
+
+See the [adapter example](examples/custom_logger/main.go), which forwards SDK logs
+to `log.Logger`. Run it offline from the repository root:
+
+```shell
+go run ./examples/custom_logger
+```
+
+See [Logging details](MIGRATION.md#logging) for structured fields and trace levels.
 
 ### FBClient
 

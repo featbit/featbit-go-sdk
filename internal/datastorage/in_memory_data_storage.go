@@ -1,7 +1,7 @@
 package datastorage
 
 import (
-	. "github.com/featbit/featbit-go-sdk/interfaces"
+	. "github.com/featbit/featbit-go-sdk/v2/interfaces"
 	"sync"
 )
 

@@ -1,8 +1,8 @@
 package factories
 
 import (
-	. "github.com/featbit/featbit-go-sdk/interfaces"
-	"github.com/featbit/featbit-go-sdk/internal/datastorage"
+	. "github.com/featbit/featbit-go-sdk/v2/interfaces"
+	"github.com/featbit/featbit-go-sdk/v2/internal/datastorage"
 )
 
 type InMemoryStorageBuilder struct{}

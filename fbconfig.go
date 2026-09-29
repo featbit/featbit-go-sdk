@@ -1,10 +1,15 @@
 package featbit
 
 import (
-	"github.com/featbit/featbit-go-sdk/factories"
-	. "github.com/featbit/featbit-go-sdk/interfaces"
+	"github.com/featbit/featbit-go-sdk/v2/factories"
+	. "github.com/featbit/featbit-go-sdk/v2/interfaces"
+	"log/slog"
 	"time"
 )
+
+// LevelTrace is the level used for verbose SDK diagnostics. Custom loggers
+// decide whether to emit records at this level.
+const LevelTrace = slog.Level(-8)
 
 const (
 	INFO = iota
@@ -16,7 +21,8 @@ const (
 )
 
 // FBConfig exposes advanced configuration options for the FBClient
-//		config = FBConfig{Offline: true}
+//
+//	config = FBConfig{Offline: true}
 type FBConfig struct {
 	// Offline whether SDK is offline
 	Offline bool
@@ -40,7 +46,14 @@ type FBConfig struct {
 	//
 	// Depending on the implementation, the factory may be a builder that allows you to set other configuration options as well.
 	InsightProcessorFactory InsightProcessorFactory
-	// LogLevel FeaBit log level
+	// Logger receives this client's logs, including logs from background components.
+	// Any interfaces.Logger implementation, including *slog.Logger, can be supplied.
+	// It controls filtering, formatting and output and must support concurrent calls.
+	// The SDK does not change the global slog logger or close the supplied logger.
+	// If nil, the SDK creates a text logger writing to stdout using LogLevel.
+	Logger Logger
+	// LogLevel controls the default logger using TRACE, DEBUG, INFO, WARN or ERROR.
+	// It is ignored when Logger is provided; these integers are not slog.Level values.
 	LogLevel int
 }
 

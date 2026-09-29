@@ -3,10 +3,11 @@ package insight
 import (
 	"encoding/json"
 	"fmt"
-	. "github.com/featbit/featbit-go-sdk/interfaces"
-	"github.com/featbit/featbit-go-sdk/internal"
-	"github.com/featbit/featbit-go-sdk/internal/types/insight"
+	. "github.com/featbit/featbit-go-sdk/v2/interfaces"
+	"github.com/featbit/featbit-go-sdk/v2/internal"
+	"github.com/featbit/featbit-go-sdk/v2/internal/types/insight"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"sync"
 	"testing"
 	"time"
@@ -65,18 +66,22 @@ func TestInsightProcessor(t *testing.T) {
 		sender := NewMockSender()
 		sender.SetParseJson(f)
 		insightProcessor := NewEventProcessor(ctx, sender, 100, 100*time.Millisecond)
+		defer insightProcessor.Close()
 		insightProcessor.Send(insight.NewUserEvent(insight.ConvertFBUserToEventUser(&user1)))
 		insightProcessor.Flush()
-		time.Sleep(10 * time.Millisecond)
-		insightProcessor.Send(insight.NewUserEvent(insight.ConvertFBUserToEventUser(&user2)))
-		insightProcessor.Flush()
-		res, _ := sender.GetLatestSendingInfo(200 * time.Millisecond)
+		// Flush is asynchronous and workers may initially be busy. Wait for
+		// delivery before sending the next event instead of assuming a sleep
+		// guarantees two separate payloads.
+		res, ok := sender.GetLatestSendingInfo(time.Second)
+		require.True(t, ok, "first event was not delivered")
 		assert.Equal(t, 1, res.Size())
 		assert.True(t, res.Contains("test-user-1"))
-		res, _ = sender.GetLatestSendingInfo(200 * time.Millisecond)
+		insightProcessor.Send(insight.NewUserEvent(insight.ConvertFBUserToEventUser(&user2)))
+		insightProcessor.Flush()
+		res, ok = sender.GetLatestSendingInfo(time.Second)
+		require.True(t, ok, "second event was not delivered")
 		assert.Equal(t, 1, res.Size())
 		assert.True(t, res.Contains("test-user-2"))
-		_ = insightProcessor.Close()
 
 	})
 	t.Run("still work even if error in sending", func(t *testing.T) {
