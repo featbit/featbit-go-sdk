@@ -5,6 +5,7 @@ import (
 	"github.com/featbit/featbit-go-sdk/v2/fixtures"
 	. "github.com/featbit/featbit-go-sdk/v2/interfaces"
 	"github.com/featbit/featbit-go-sdk/v2/internal/types/data"
+	"sync/atomic"
 	"time"
 )
 
@@ -13,7 +14,7 @@ type MockStreaming struct {
 	loadData        bool
 	waitTime        time.Duration
 	realDataUpdater DataUpdater
-	initialized     bool
+	initialized     atomic.Bool
 }
 
 func (m *MockStreaming) Close() error {
@@ -21,7 +22,7 @@ func (m *MockStreaming) Close() error {
 }
 
 func (m *MockStreaming) IsInitialized() bool {
-	return m.initialized
+	return m.initialized.Load()
 }
 
 func (m *MockStreaming) Start() <-chan struct{} {
@@ -29,7 +30,7 @@ func (m *MockStreaming) Start() <-chan struct{} {
 	go func() {
 		time.Sleep(m.waitTime)
 		if m.success {
-			m.initialized = true
+			m.initialized.Store(true)
 			if m.loadData {
 				jsonBytes, _ := fixtures.LoadFBClientTestData()
 				var all data.All
