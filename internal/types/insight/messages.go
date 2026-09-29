@@ -1,6 +1,6 @@
 package insight
 
-import . "github.com/featbit/featbit-go-sdk/interfaces"
+import . "github.com/featbit/featbit-go-sdk/v2/interfaces"
 
 type EventMessage interface{}
 

@@ -1,9 +1,10 @@
 package featbit
 
 import (
-	. "github.com/featbit/featbit-go-sdk/interfaces"
-	"github.com/featbit/featbit-go-sdk/internal/types/data"
-	"github.com/featbit/featbit-go-sdk/internal/util/log"
+	. "github.com/featbit/featbit-go-sdk/v2/interfaces"
+	"github.com/featbit/featbit-go-sdk/v2/internal/types/data"
+	"github.com/featbit/featbit-go-sdk/v2/internal/util/log"
+	"log/slog"
 )
 
 const (
@@ -44,14 +45,19 @@ const (
 )
 
 type evaluator struct {
+	logger     *slog.Logger
 	getFlag    func(key string) *data.FeatureFlag
 	getSegment func(key string) *data.Segment
 	funcSlice  []func(*data.FeatureFlag, *FBUser) (*evalResult, bool)
 }
 
 func newEvaluator(getFlag func(key string) *data.FeatureFlag,
-	getSegment func(key string) *data.Segment) *evaluator {
-	e := &evaluator{getFlag: getFlag, getSegment: getSegment}
+	getSegment func(key string) *data.Segment, loggers ...*slog.Logger) *evaluator {
+	var logger *slog.Logger
+	if len(loggers) > 0 {
+		logger = loggers[0]
+	}
+	e := &evaluator{getFlag: getFlag, getSegment: getSegment, logger: log.OrDiscard(logger)}
 	fs := []func(*data.FeatureFlag, *FBUser) (*evalResult, bool){
 		e.matchFeatureFlagDisabledUserVariation,
 		e.matchTargetedUserVariation,
@@ -65,7 +71,7 @@ func newEvaluator(getFlag func(key string) *data.FeatureFlag,
 func (e *evaluator) evaluate(flag *data.FeatureFlag, user *FBUser, event Event) (er *evalResult) {
 	defer func() {
 		if er.success {
-			log.LogInfo("FB Go SDK: User %v, Feature Flag %v, Flag Value %v", user.GetKey(), flag.Key, er.fv)
+			e.logger.Info("FB Go SDK: feature flag evaluated", "user_key", user.GetKey(), "flag_key", flag.Key, "value", er.fv)
 			if event != nil {
 				eventFlag := er.toEventFlag()
 				event.Add(eventFlag)

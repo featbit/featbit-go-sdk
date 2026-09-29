@@ -19,12 +19,14 @@ If you want to use your own data source, see [Offline Mode](#offline-mode).
 
 ## Get Started
 
-Go Server Side SDK is based on go 1.13, so you need to install go 1.13 or above.
+This branch contains unreleased v2 work and requires Go 1.26.0 or later. See [Migrating from v1 to v2](MIGRATION.md) for import and logging changes.
 
 ### Installation
 
+After the v2 branch is published, install its development version with:
+
 ```
-go get github.com/featbit/featbit-go-sdk
+go get github.com/featbit/featbit-go-sdk/v2@v2
 ```
 
 ### Prerequisite
@@ -46,8 +48,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/featbit/featbit-go-sdk"
-	"github.com/featbit/featbit-go-sdk/interfaces"
+	"github.com/featbit/featbit-go-sdk/v2"
+	"github.com/featbit/featbit-go-sdk/v2/interfaces"
 )
 
 func main() {

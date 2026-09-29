@@ -1,98 +1,55 @@
 package log
 
 import (
-	"fmt"
-	"strings"
-	"time"
+	"log/slog"
+	"os"
+
+	"github.com/featbit/featbit-go-sdk/v2/interfaces"
 )
 
-const (
-	INFO = iota
-	WARN
-	ERROR
+// LevelTrace is the SDK's diagnostic level below slog.LevelDebug.
+const LevelTrace = slog.Level(-8)
 
-	TRACE = -2
-	DEBUG = -1
-)
-
-type Logger interface {
-	Errorf(format string, args ...interface{})
-	Warnf(format string, args ...interface{})
-	Infof(format string, args ...interface{})
-	Debugf(format string, args ...interface{})
-	Tracef(format string, args ...interface{})
-}
-
-type SimpleLogger struct {
-	Level int
-}
-
-func (s *SimpleLogger) Errorf(format string, args ...interface{}) {
-	format = strings.Join([]string{"[ERROR]", time.Now().Format(time.RFC3339), format, "\n"}, " ")
-	fmt.Printf(format, args...)
-}
-
-func (s *SimpleLogger) Warnf(format string, args ...interface{}) {
-	if s.Level <= WARN {
-		format = strings.Join([]string{"[WARNING]", time.Now().Format(time.RFC3339), format, "\n"}, " ")
-		fmt.Printf(format, args...)
+// NewDefault creates a separate handler for each client. The integer levels
+// retain the v1 FBConfig.LogLevel values; custom loggers use their own handlers.
+func NewDefault(level int) *slog.Logger {
+	var threshold slog.Level
+	switch {
+	case level == -2:
+		threshold = LevelTrace
+	case level < 0:
+		threshold = slog.LevelDebug
+	case level == 0:
+		threshold = slog.LevelInfo
+	case level == 1:
+		threshold = slog.LevelWarn
+	default:
+		threshold = slog.LevelError
 	}
+	return slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: threshold,
+		ReplaceAttr: func(groups []string, attr slog.Attr) slog.Attr {
+			if len(groups) == 0 && attr.Key == slog.LevelKey && attr.Value.Any() == LevelTrace {
+				return slog.String(slog.LevelKey, "TRACE")
+			}
+			return attr
+		},
+	}))
 }
 
-func (s *SimpleLogger) Infof(format string, args ...interface{}) {
-	if s.Level <= INFO {
-		format = strings.Join([]string{"[INFO]", time.Now().Format(time.RFC3339), format, "\n"}, " ")
-		fmt.Printf(format, args...)
+// OrDiscard lets standalone internal components operate without a logger.
+func OrDiscard(logger *slog.Logger) *slog.Logger {
+	if logger == nil {
+		return slog.New(slog.DiscardHandler)
 	}
+	return logger
 }
 
-func (s *SimpleLogger) Debugf(format string, args ...interface{}) {
-	if s.Level <= DEBUG {
-		format = strings.Join([]string{"[DEBUG]", time.Now().Format(time.RFC3339), format, "\n"}, " ")
-		fmt.Printf(format, args...)
+// FromContext supports existing custom Context implementations without adding
+// a required method to that public interface.
+func FromContext(ctx interfaces.Context) *slog.Logger {
+	if provider, ok := ctx.(interfaces.LoggerProvider); ok {
+		return OrDiscard(provider.GetLogger())
 	}
-
-}
-
-func (s *SimpleLogger) Tracef(format string, args ...interface{}) {
-	if s.Level == TRACE {
-		format = strings.Join([]string{"[TRACE]", time.Now().Format(time.RFC3339), format, "\n"}, " ")
-		fmt.Printf(format, args...)
-	}
-}
-
-func SetLogger(l Logger) {
-	logger = l
-}
-
-var logger Logger
-
-func LogError(format string, args ...interface{}) {
-	if logger != nil {
-		logger.Errorf(format, args...)
-	}
-}
-
-func LogWarn(format string, args ...interface{}) {
-	if logger != nil {
-		logger.Warnf(format, args...)
-	}
-}
-
-func LogInfo(format string, args ...interface{}) {
-	if logger != nil {
-		logger.Infof(format, args...)
-	}
-}
-
-func LogDebug(format string, args ...interface{}) {
-	if logger != nil {
-		logger.Debugf(format, args...)
-	}
-}
-
-func LogTrace(format string, args ...interface{}) {
-	if logger != nil {
-		logger.Tracef(format, args...)
-	}
+	return OrDiscard(nil)
 }

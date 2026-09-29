@@ -2,9 +2,9 @@ package datasynchronization
 
 import (
 	"encoding/json"
-	"github.com/featbit/featbit-go-sdk/fixtures"
-	. "github.com/featbit/featbit-go-sdk/interfaces"
-	"github.com/featbit/featbit-go-sdk/internal/types/data"
+	"github.com/featbit/featbit-go-sdk/v2/fixtures"
+	. "github.com/featbit/featbit-go-sdk/v2/interfaces"
+	"github.com/featbit/featbit-go-sdk/v2/internal/types/data"
 	"time"
 )
 

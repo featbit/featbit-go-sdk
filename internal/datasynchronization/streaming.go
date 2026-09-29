@@ -1,13 +1,15 @@
 package datasynchronization
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	. "github.com/featbit/featbit-go-sdk/interfaces"
-	"github.com/featbit/featbit-go-sdk/internal/types/data"
-	"github.com/featbit/featbit-go-sdk/internal/util"
-	"github.com/featbit/featbit-go-sdk/internal/util/log"
+	. "github.com/featbit/featbit-go-sdk/v2/interfaces"
+	"github.com/featbit/featbit-go-sdk/v2/internal/types/data"
+	"github.com/featbit/featbit-go-sdk/v2/internal/util"
+	"github.com/featbit/featbit-go-sdk/v2/internal/util/log"
 	"github.com/gorilla/websocket"
+	"log/slog"
 	"net"
 	"strconv"
 	"strings"
@@ -71,7 +73,6 @@ func newSyncMessage(bytes []byte, err error) *syncMessage {
 	}
 	// ignore pong message
 	if !m.IsSyncMessage() {
-		log.LogTrace("receive pong")
 		return nil
 	}
 	var all data.All
@@ -83,6 +84,7 @@ func newSyncMessage(bytes []byte, err error) *syncMessage {
 }
 
 type Streaming struct {
+	logger        *slog.Logger
 	maxRetryTimes int64
 	context       Context
 	dataUpdater   DataUpdater
@@ -111,11 +113,13 @@ type Streaming struct {
 }
 
 func NewStreaming(context Context, dataUpdater DataUpdater, firstRetryDelay time.Duration, maxRetryTimes int) *Streaming {
+	logger := log.FromContext(context)
 	return &Streaming{
+		logger:        logger,
 		context:       context,
 		dataUpdater:   dataUpdater,
 		maxRetryTimes: int64(maxRetryTimes),
-		strategy:      NewWithFirstRetryDelay(firstRetryDelay),
+		strategy:      NewWithFirstRetryDelay(firstRetryDelay, logger),
 		readyCh:       make(chan struct{}),
 		closeCh:       make(chan struct{}),
 	}
@@ -123,7 +127,7 @@ func NewStreaming(context Context, dataUpdater DataUpdater, firstRetryDelay time
 
 func (s *Streaming) Close() error {
 	s.closeOnce.Do(func() {
-		log.LogInfo("FB GO SDK: streaming is stopping")
+		s.logger.Info("FB GO SDK: streaming is stopping")
 		s.streamClosed = true
 		close(s.closeCh)
 	})
@@ -138,7 +142,7 @@ func (s *Streaming) IsInitialized() bool {
 
 func (s *Streaming) Start() <-chan struct{} {
 	s.startOnce.Do(func() {
-		log.LogDebug("Streaming Starting...")
+		s.logger.Debug("Streaming Starting...")
 		atomic.AddInt64(&s.connRetryCounter, 0)
 		s.strategy.SetGoodRunAtNow()
 		go s.connectRoutine()
@@ -193,7 +197,7 @@ func (s *Streaming) reconnect() {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	if s.streamClosed {
-		log.LogDebug("force to quit, no more reconnect")
+		s.logger.Debug("force to quit, no more reconnect")
 		return
 	}
 	go s.connectRoutine()
@@ -201,7 +205,7 @@ func (s *Streaming) reconnect() {
 
 func (s *Streaming) onClose(code int, _ string) error {
 	// handle close code
-	log.LogDebug("Streaming WebSocket close reason: %d", code)
+	s.logger.Debug("Streaming WebSocket closed", "code", code)
 	switch code {
 	case websocket.CloseNormalClosure:
 		s.dataUpdater.UpdateStatus(NormalOFFState())
@@ -224,7 +228,7 @@ func (s *Streaming) onOpen() error {
 	if !s.isWsConnected() {
 		return nil
 	}
-	log.LogDebug("Ask Data Updating")
+	s.logger.Debug("Ask Data Updating")
 	createJson := func(version int64) []byte {
 		return []byte(fmt.Sprintf(data.DefaultSyncMessage, version))
 	}
@@ -238,7 +242,7 @@ func (s *Streaming) onOpen() error {
 }
 
 func (s *Streaming) onDataProcess(allData *data.All) bool {
-	log.LogDebug("Streaming WebSocket is processing data")
+	s.logger.Debug("Streaming WebSocket is processing data")
 	newData := allData.Data.ToStorageType()
 	var success bool = true
 	switch allData.Data.EventType {
@@ -260,7 +264,7 @@ func (s *Streaming) onDataProcess(allData *data.All) bool {
 			s.initialized = true
 			close(s.readyCh)
 		})
-		log.LogDebug("processing data is well done")
+		s.logger.Debug("processing data is well done")
 		s.dataUpdater.UpdateStatus(OKState())
 
 	}
@@ -268,7 +272,7 @@ func (s *Streaming) onDataProcess(allData *data.All) bool {
 }
 
 func (s *Streaming) connectRoutine() {
-	log.LogDebug("connection go routine is starting")
+	s.logger.Debug("connection go routine is starting")
 	for s.connRetryCounter <= s.maxRetryTimes && !s.streamClosed {
 		network := s.context.GetNetwork()
 		dialer := network.GetWebsocketClient().(*websocket.Dialer)
@@ -279,27 +283,27 @@ func (s *Streaming) connectRoutine() {
 		conn, resp, err := dialer.Dial(url, network.GetHeaders(nil))
 		if err != nil {
 			if resp != nil {
-				log.LogDebug("Err in connecting ws server, http code = %v", resp.StatusCode)
+				s.logger.Debug("Error connecting to WebSocket server", "status_code", resp.StatusCode)
 			}
 			if err.Error() == invalidUrl {
-				log.LogError("FB GO SDK: invalid url: %s", streamingUri)
+				s.logger.Error("FB GO SDK: invalid streaming URL", "url", streamingUri)
 				s.dataUpdater.UpdateStatus(ErrorOFFState(NetworkError, err.Error()))
 				s.noMoreReconnect()
 				return
 			}
 			if _, ok := err.(*net.DNSError); ok {
-				log.LogError("FB GO SDK: Host unknown: %s", err.Error())
+				s.logger.Error("FB GO SDK: Host unknown", "error", err)
 				s.dataUpdater.UpdateStatus(ErrorOFFState(NetworkError, err.Error()))
 				s.noMoreReconnect()
 				return
 			}
 			s.dataUpdater.UpdateStatus(INTERRUPTEDState(NetworkError, err.Error()))
 			delayToReconnect := s.strategy.NextDelay()
-			log.LogError("FB GO SDK: Streaming Websocket network error  : %s, try to reconnect...", err.Error())
+			s.logger.Error("FB GO SDK: Streaming WebSocket network error, reconnecting", "error", err, "retry_delay", delayToReconnect)
 			time.Sleep(delayToReconnect)
 			continue
 		}
-		log.LogDebug("ws conn is done")
+		s.logger.Debug("ws conn is done")
 		s.strategy.SetGoodRunAtNow()
 		s.lock.Lock()
 		s.wsConnected = true
@@ -310,7 +314,7 @@ func (s *Streaming) connectRoutine() {
 		_ = s.onOpen()
 		go s.readRoutine()
 		go s.dataProcessRoutine()
-		log.LogDebug("connection is completed, go routine is over")
+		s.logger.Debug("connection is completed, go routine is over")
 		return
 	}
 }
@@ -320,15 +324,16 @@ func (s *Streaming) readRoutine() (isConnect bool) {
 		return
 	}
 	defer func() {
-		log.LogDebug("read go routine is over, reconnect or exit")
+		s.logger.Debug("read go routine is over, reconnect or exit")
 		s.reconnect()
 	}()
-	log.LogDebug("read go routine is starting")
+	s.logger.Debug("read go routine is starting")
 	for {
 		_, jsonBytes, err := s.conn.ReadMessage()
 		msg := newSyncMessage(jsonBytes, err)
 		// ignore pong message
 		if msg == nil {
+			s.logger.Log(context.Background(), log.LevelTrace, "receive pong")
 			continue
 		}
 		// 1001 close error: data sync error, just stop routines and restart them
@@ -342,7 +347,7 @@ func (s *Streaming) readRoutine() (isConnect bool) {
 		}
 		// json parsing error, close and no more restart; fatal error should contact to FeatBit team
 		if msg.isJsonParsingErr {
-			log.LogError("FB GO SDK: Streaming WebSocket Failure: json parsing error, fatal error should contact to FeatBit team")
+			s.logger.Error("FB GO SDK: Streaming WebSocket Failure: json parsing error, fatal error should contact to FeatBit team")
 			s.dataUpdater.UpdateStatus(ErrorOFFState(DataInvalidError, DataInvalidError))
 			s.noMoreReconnect()
 			return
@@ -351,7 +356,7 @@ func (s *Streaming) readRoutine() (isConnect bool) {
 		select {
 		case s.r2pChan <- msg:
 		default:
-			log.LogDebug(r2pChFullErrStr)
+			s.logger.Debug(r2pChFullErrStr)
 			s.dataUpdater.UpdateStatus(INTERRUPTEDState(UnknownError, r2pChFullErrStr))
 			return
 		}
@@ -366,12 +371,12 @@ func (s *Streaming) dataProcessRoutine() {
 	if !s.wsConnected {
 		return
 	}
-	log.LogDebug("data process go routine is starting")
+	s.logger.Debug("data process go routine is starting")
 	// start ping scheduler, stop it at quiting the routine
-	log.LogDebug("ping ticker is starting")
+	s.logger.Debug("ping ticker is starting")
 	s.pingScheduler = time.NewTicker(pingInterval)
 	defer func() {
-		log.LogDebug("ping ticker is over")
+		s.logger.Debug("ping ticker is over")
 		s.pingScheduler.Stop()
 	}()
 
@@ -381,11 +386,11 @@ func (s *Streaming) dataProcessRoutine() {
 	for {
 		select {
 		case t := <-s.pingScheduler.C:
-			log.LogTrace("ping in %s", t)
+			s.logger.Log(context.Background(), log.LevelTrace, "ping", "ping_time", t)
 			_ = s.onPing()
 		case syncMsg, ok := <-s.r2pChan:
 			if !ok {
-				log.LogWarn("quit the routine by error or close, maybe reconnect later")
+				s.logger.Warn("quit the routine by error or close, maybe reconnect later")
 				return
 			}
 			if syncMsg.ok && !s.onDataProcess(syncMsg.data) {
@@ -393,24 +398,24 @@ func (s *Streaming) dataProcessRoutine() {
 				_ = s.sendCloseMessageToServer(websocket.CloseGoingAway, CloseAndThenReconnByDatasyncError)
 			} else if syncMsg.isOtherErr {
 				// handle reconnect-able error
-				log.LogWarn("FB GO SDK: Streaming WbSocket will reconnect because of %v", syncMsg.err.Error())
+				s.logger.Warn("FB GO SDK: Streaming WebSocket will reconnect", "error", syncMsg.err)
 				s.dataUpdater.UpdateStatus(INTERRUPTEDState(WebsocketError, syncMsg.err.Error()))
 			}
 		case <-s.closeCh:
-			log.LogDebug("force to close streaming because of SDK quit")
+			s.logger.Debug("force to close streaming because of SDK quit")
 			// Cleanly close the connection by sending a close message and then
 			// waiting (with timeout) for the server to close the connection.
 			err := s.sendCloseMessageToServer(websocket.CloseNormalClosure, "")
 			if err != nil {
-				log.LogError("FB GO SDK: unknown error in closing streaming, %v", err.Error())
+				s.logger.Error("FB GO SDK: unknown error in closing streaming", "error", err)
 				s.dataUpdater.UpdateStatus(ErrorOFFState(UnknownError, err.Error()))
 				return
 			}
 			select {
 			case <-s.r2pChan:
-				log.LogDebug("data process go routine is over")
+				s.logger.Debug("data process go routine is over")
 			case <-time.After(closeTimeOut):
-				log.LogWarn("time out in closing streaming, force to quit")
+				s.logger.Warn("time out in closing streaming, force to quit")
 				s.dataUpdater.UpdateStatus(ErrorOFFState(WebsocketCloseTimeout, WebsocketCloseTimeout))
 			}
 			return

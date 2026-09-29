@@ -1,10 +1,10 @@
 package featbit
 
 import (
-	"github.com/featbit/featbit-go-sdk/interfaces"
-	"github.com/featbit/featbit-go-sdk/internal/datastorage"
-	"github.com/featbit/featbit-go-sdk/internal/types/data"
-	"github.com/featbit/featbit-go-sdk/internal/types/insight"
+	"github.com/featbit/featbit-go-sdk/v2/interfaces"
+	"github.com/featbit/featbit-go-sdk/v2/internal/datastorage"
+	"github.com/featbit/featbit-go-sdk/v2/internal/types/data"
+	"github.com/featbit/featbit-go-sdk/v2/internal/types/insight"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

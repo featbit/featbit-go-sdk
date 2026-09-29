@@ -2,14 +2,16 @@ package featbit
 
 import (
 	"encoding/json"
-	. "github.com/featbit/featbit-go-sdk/interfaces"
-	"github.com/featbit/featbit-go-sdk/internal/types/insight"
-	"github.com/featbit/featbit-go-sdk/internal/util/log"
+	. "github.com/featbit/featbit-go-sdk/v2/interfaces"
+	"github.com/featbit/featbit-go-sdk/v2/internal/types/insight"
+	"github.com/featbit/featbit-go-sdk/v2/internal/util/log"
+	"log/slog"
 	"reflect"
 	"strconv"
 )
 
 type allFlagStateImpl struct {
+	logger    *slog.Logger
 	success   bool
 	reason    string
 	states    map[string]map[evalResult]*insight.FlagEvent
@@ -76,7 +78,7 @@ func (a allFlagStateImpl) get(featureFlagKey string, requiredType string, defaul
 	}
 	for er, event := range res {
 		if er.checkType(requiredType) {
-			ed, err := er.castVariationByFlagType(requiredType, defaultValue)
+			ed, err := er.castVariationByFlagType(requiredType, defaultValue, a.logger)
 			if err == nil && a.sendEvent != nil && event != nil {
 				event.UpdateTimestamp()
 				a.sendEvent(event)
@@ -129,7 +131,7 @@ func (er *evalResult) checkType(requiredType string) bool {
 	return false
 }
 
-func (er *evalResult) castVariationByFlagType(requiredType string, defaultValue interface{}) (EvalDetail, error) {
+func (er *evalResult) castVariationByFlagType(requiredType string, defaultValue interface{}, logger *slog.Logger) (EvalDetail, error) {
 	switch requiredType {
 	case FlagBoolType:
 		b, _ := strconv.ParseBool(er.fv)
@@ -145,7 +147,7 @@ func (er *evalResult) castVariationByFlagType(requiredType string, defaultValue 
 		t := reflect.TypeOf(defaultValue)
 		inf := reflect.New(t).Interface()
 		if err := json.Unmarshal([]byte(er.fv), inf); err != nil {
-			log.LogError("FB GO SDK: unexpected error in parsing json, use default value")
+			log.OrDiscard(logger).Error("FB GO SDK: unexpected error in parsing json, use default value", "error", err, "flag_key", er.keyName)
 			return EvalDetail{Variation: defaultValue, Reason: er.reason, KeyName: er.keyName, Name: er.name}, err
 		}
 		inf = reflect.ValueOf(inf).Elem().Interface()

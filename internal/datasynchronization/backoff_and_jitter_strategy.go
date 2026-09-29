@@ -2,7 +2,8 @@ package datasynchronization
 
 import (
 	realRand "crypto/rand"
-	"github.com/featbit/featbit-go-sdk/internal/util/log"
+	"github.com/featbit/featbit-go-sdk/v2/internal/util/log"
+	"log/slog"
 	"math"
 	"math/big"
 	"math/rand"
@@ -10,6 +11,7 @@ import (
 )
 
 type BackoffAndJitterStrategy struct {
+	logger          *slog.Logger
 	firstRetryDelay time.Duration
 	maxRetryDelay   time.Duration
 	resetInterval   time.Duration
@@ -18,16 +20,18 @@ type BackoffAndJitterStrategy struct {
 	lastGoodRun     time.Time
 }
 
-var defaultStrategy = &BackoffAndJitterStrategy{
-	maxRetryDelay: 60 * 1000 * time.Millisecond,
-	resetInterval: 60 * 1000 * time.Millisecond,
-	jitterRatio:   0.5,
-	retryCount:    0,
-}
-
-func NewWithFirstRetryDelay(firstRetryDelay time.Duration) *BackoffAndJitterStrategy {
-	defaultStrategy.firstRetryDelay = firstRetryDelay
-	return defaultStrategy
+func NewWithFirstRetryDelay(firstRetryDelay time.Duration, loggers ...*slog.Logger) *BackoffAndJitterStrategy {
+	logger := log.FromContext(nil)
+	if len(loggers) > 0 && loggers[0] != nil {
+		logger = loggers[0]
+	}
+	return &BackoffAndJitterStrategy{
+		logger:          logger,
+		firstRetryDelay: firstRetryDelay,
+		maxRetryDelay:   60 * time.Second,
+		resetInterval:   60 * time.Second,
+		jitterRatio:     0.5,
+	}
 }
 
 func (s *BackoffAndJitterStrategy) SetGoodRunAtNow() {
@@ -58,6 +62,6 @@ func (b *BackoffAndJitterStrategy) NextDelay() time.Duration {
 	delay := (jitterTime + backOff/2) * 1000
 	b.retryCount += 1
 	millis := time.Duration(int64(math.Floor(delay))) * time.Millisecond
-	log.LogInfo("backoff: %v, jitter: %v, next delay: %v", backOff, jitterTime, millis.Milliseconds())
+	b.logger.Info("backoff before retry", "backoff_seconds", backOff, "jitter_seconds", jitterTime, "delay", millis)
 	return millis
 }

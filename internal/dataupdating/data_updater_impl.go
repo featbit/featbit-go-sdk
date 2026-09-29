@@ -1,8 +1,9 @@
 package dataupdating
 
 import (
-	. "github.com/featbit/featbit-go-sdk/interfaces"
-	"github.com/featbit/featbit-go-sdk/internal/util/log"
+	. "github.com/featbit/featbit-go-sdk/v2/interfaces"
+	"github.com/featbit/featbit-go-sdk/v2/internal/util/log"
+	"log/slog"
 	"sync"
 	"time"
 )
@@ -14,16 +15,22 @@ type DataUpdaterImpl struct {
 	currentState State
 	lock         sync.Mutex
 	listeners    []chan State
+	logger       *slog.Logger
 }
 
-func NewDataUpdaterImpl(storage DataStorage) *DataUpdaterImpl {
+func NewDataUpdaterImpl(storage DataStorage, loggers ...*slog.Logger) *DataUpdaterImpl {
+	var logger *slog.Logger
+	if len(loggers) > 0 {
+		logger = loggers[0]
+	}
 	return &DataUpdaterImpl{storage: storage,
 		currentState: INITIALIZINGState(),
+		logger:       log.OrDiscard(logger),
 	}
 }
 
 func (d *DataUpdaterImpl) handleErrorFromStorage(errorType string, err error) {
-	log.LogError("FB GO SDK: Data Storage error: {}, DataSynchronizer will attempt to receive the data", err.Error())
+	d.logger.Error("FB GO SDK: Data Storage error, DataSynchronizer will attempt to receive the data", "error", err, "error_type", errorType)
 	d.UpdateStatus(INTERRUPTEDState(errorType, err.Error()))
 }
 

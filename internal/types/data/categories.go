@@ -1,6 +1,6 @@
 package data
 
-import . "github.com/featbit/featbit-go-sdk/interfaces"
+import . "github.com/featbit/featbit-go-sdk/v2/interfaces"
 
 // category type for the feature flag
 type features struct{}

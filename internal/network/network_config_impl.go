@@ -1,7 +1,7 @@
 package fbnetwork
 
 import (
-	"github.com/featbit/featbit-go-sdk/interfaces"
+	"github.com/featbit/featbit-go-sdk/v2/interfaces"
 	"github.com/gorilla/websocket"
 	"net/http"
 )

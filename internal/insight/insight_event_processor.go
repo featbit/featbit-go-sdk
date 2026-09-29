@@ -2,9 +2,10 @@ package insight
 
 import (
 	"encoding/json"
-	. "github.com/featbit/featbit-go-sdk/interfaces"
-	"github.com/featbit/featbit-go-sdk/internal/types/insight"
-	"github.com/featbit/featbit-go-sdk/internal/util/log"
+	. "github.com/featbit/featbit-go-sdk/v2/interfaces"
+	"github.com/featbit/featbit-go-sdk/v2/internal/types/insight"
+	"github.com/featbit/featbit-go-sdk/v2/internal/util/log"
+	"log/slog"
 	"strconv"
 	"sync"
 	"time"
@@ -77,6 +78,7 @@ func (p *payload) split(size int) [][]Event {
 }
 
 type eventDispatcher struct {
+	logger   *slog.Logger
 	buffer   *nextFlushBuffer
 	outboxCh chan *payload
 	permits  *sync.WaitGroup
@@ -91,8 +93,8 @@ func (ed *eventDispatcher) runDispatchEvents(inboxCh <-chan insight.EventMessage
 	if ed.closed {
 		return
 	}
-	log.LogDebug("event dispatcher is working")
-	log.LogDebug("flush ticker is starting")
+	ed.logger.Debug("event dispatcher is working")
+	ed.logger.Debug("flush ticker is starting")
 	flushScheduler := time.NewTicker(flushInterval)
 	for {
 		select {
@@ -103,9 +105,9 @@ func (ed *eventDispatcher) runDispatchEvents(inboxCh <-chan insight.EventMessage
 			case insight.FlushingMessage:
 				ed.triggerFlush()
 			case insight.ShutdownMessage:
-				log.LogDebug("event dispatcher is stopping")
+				ed.logger.Debug("event dispatcher is stopping")
 				ed.closed = true
-				log.LogDebug("flush ticker is over")
+				ed.logger.Debug("flush ticker is over")
 				flushScheduler.Stop()
 				ed.permits.Wait()
 				close(ed.outboxCh)
@@ -128,7 +130,7 @@ func (ed *eventDispatcher) triggerFlush() {
 	ed.permits.Add(1)
 	select {
 	case ed.outboxCh <- payload:
-		log.LogDebug("trigger flush")
+		ed.logger.Debug("trigger flush")
 		// clear unused buffer for next flush
 		ed.buffer.clear()
 	default:
@@ -144,23 +146,23 @@ func (ed *eventDispatcher) putEventToNextBuffer(event Event) {
 		return
 	}
 	if event.IsSendEvent() {
-		log.LogDebug("put event to buffer")
+		ed.logger.Debug("put event to buffer")
 		ed.buffer.add(event)
 	}
 }
 
-func runFlashRunner(name string, eventUri string, sender Sender, outboxCh <-chan *payload, permits *sync.WaitGroup) {
-	log.LogDebug("%s is starting", name)
+func runFlashRunner(name string, eventUri string, sender Sender, outboxCh <-chan *payload, permits *sync.WaitGroup, logger *slog.Logger) {
+	logger.Debug("flush worker is starting", "worker", name)
 	for {
 		payloads, running := <-outboxCh
 		if !running {
 			// outbox closed - we're shutting down
-			log.LogDebug("%s is over", name)
+			logger.Debug("flush worker is over", "worker", name)
 			return
 		}
 		// split the payload into small partitions and send them to feature flag center
 		for _, payload := range payloads.split(MaxEventSizePerRequest) {
-			log.LogDebug("payload size: %v", len(payload))
+			logger.Debug("sending event payload", "size", len(payload))
 			jsonBytes, _ := json.Marshal(payload)
 			_, _ = sender.PostJson(eventUri, jsonBytes)
 		}
@@ -170,19 +172,21 @@ func runFlashRunner(name string, eventUri string, sender Sender, outboxCh <-chan
 
 func startEventDispatcher(context Context, inboxCh <-chan insight.EventMessage, sender Sender, capacity int, flushInterval time.Duration) {
 	ed := &eventDispatcher{
+		logger:   log.FromContext(context),
 		buffer:   newNextFlushBuffer(capacity),
 		outboxCh: make(chan *payload),
 		permits:  &sync.WaitGroup{},
 	}
 	for i := 0; i < MaxFlushWorkersNumber; i++ {
 		name := "flush-worker-" + strconv.Itoa(i)
-		go runFlashRunner(name, context.GetEventUri(), sender, ed.outboxCh, ed.permits)
+		go runFlashRunner(name, context.GetEventUri(), sender, ed.outboxCh, ed.permits, ed.logger)
 	}
 	go ed.runDispatchEvents(inboxCh, flushInterval)
 
 }
 
 type EventProcessor struct {
+	logger  *slog.Logger
 	inboxCh chan insight.EventMessage
 	// close processor action should call only one time
 	closeOnce sync.Once
@@ -194,7 +198,7 @@ type EventProcessor struct {
 func NewEventProcessor(context Context, sender Sender, capacity int, flushInterval time.Duration) *EventProcessor {
 	inboxCh := make(chan insight.EventMessage, capacity)
 	startEventDispatcher(context, inboxCh, sender, capacity, flushInterval)
-	return &EventProcessor{inboxCh: inboxCh, sender: sender}
+	return &EventProcessor{logger: log.FromContext(context), inboxCh: inboxCh, sender: sender}
 }
 
 func (ep *EventProcessor) putMsgToBox(msg insight.EventMessage) bool {
@@ -209,7 +213,7 @@ func (ep *EventProcessor) putMsgToBox(msg insight.EventMessage) bool {
 			// if it reaches here, it means the application is probably doing tons of flag evaluations across many threads.
 			// So if we wait for a space in the inbox, we risk a very serious slowdown of the app.
 			// To avoid that, we'll just drop the event or you can increase the capacity of inbox
-			log.LogWarn("FB GO SDK: events are being produced faster than they can be processed; some events will be dropped")
+			ep.logger.Warn("FB GO SDK: events are being produced faster than they can be processed; some events will be dropped")
 			return false
 		}
 	}
@@ -217,7 +221,7 @@ func (ep *EventProcessor) putMsgToBox(msg insight.EventMessage) bool {
 
 func (ep *EventProcessor) Close() error {
 	ep.closeOnce.Do(func() {
-		log.LogInfo("FB GO SDK: insight processor is stopping")
+		ep.logger.Info("FB GO SDK: insight processor is stopping")
 		ep.processorClosed = true
 		//flush all the left events
 		ep.putMsgToBox(insight.FlushingMessage{})
@@ -238,7 +242,7 @@ func (ep *EventProcessor) Send(event Event) {
 	case *insight.UserEvent, *insight.FlagEvent, *insight.MetricEvent:
 		ep.putMsgToBox(insight.NewSendingEvent(event))
 	default:
-		log.LogWarn("ignore event")
+		ep.logger.Warn("ignore event")
 	}
 }
 
