@@ -19,14 +19,14 @@ If you want to use your own data source, see [Offline Mode](#offline-mode).
 
 ## Get Started
 
-This branch contains unreleased v2 work and requires Go 1.26.0 or later. See [Migrating from v1 to v2](MIGRATION.md) for import and logging changes.
+Version 2.0.0 requires Go 1.26.0 or later. See [Migrating from v1 to v2](MIGRATION.md) for import and logging changes.
 
 ### Installation
 
-After the v2 branch is published, install its development version with:
+Install version 2.0.0 with:
 
 ```
-go get github.com/featbit/featbit-go-sdk/v2@v2
+go get github.com/featbit/featbit-go-sdk/v2@v2.0.0
 ```
 
 ### Prerequisite

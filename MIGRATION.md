@@ -1,7 +1,6 @@
 # Migrating from v1 to v2
 
-This branch contains unreleased v2 work. The instructions below describe the
-planned migration; they do not imply that a `v2.0.0` release is available.
+This guide describes migration from v1 to v2.0.0.
 
 ## Go version and imports
 
