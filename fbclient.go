@@ -192,6 +192,9 @@ func MakeCustomFBClient(envSecret string, streamingUrl string, eventUrl string, 
 	}
 
 	client.sendEvent = func(event Event) {
+		if flagEvent, ok := event.(*insight.FlagEvent); ok && !flagEvent.IsSendEvent() {
+			return
+		}
 		client.insightProcessor.Send(event)
 	}
 
@@ -382,7 +385,7 @@ func (client *FBClient) Flush() error {
 }
 
 // evaluateInternal internal use for evaluate flag value
-func (client *FBClient) evaluateInternal(featureFlagKey string, user *FBUser, requiredType string) (*evalResult, error) {
+func (client *FBClient) evaluateInternal(featureFlagKey string, user *FBUser, requiredType string, event Event) (*evalResult, error) {
 	if !client.IsInitialized() {
 		log.OrDiscard(client.logger).Log(context.Background(), slog.LevelWarn, "FB GO SDK: evaluation is called before GO SDK client is initialized for feature flag, well using the default value")
 		return errorResult(ReasonClientNotReady, featureFlagKey, FlagNameUnknown), clientNotInitialized
@@ -397,14 +400,11 @@ func (client *FBClient) evaluateInternal(featureFlagKey string, user *FBUser, re
 		log.OrDiscard(client.logger).Log(context.Background(), slog.LevelWarn, "FB GO SDK: invalid user for feature flag, returning default value", "flag_key", featureFlagKey)
 		return errorResult(ReasonUserNotSpecified, featureFlagKey, FlagNameUnknown), userInvalid
 	}
-	eventUser := insight.ConvertFBUserToEventUser(user)
-	event := insight.NewFlagEvent(eventUser)
 	er := client.evaluator.evaluate(flag, user, event)
 	if !er.checkType(requiredType) {
 		return errorResult(ReasonWrongType, featureFlagKey, er.name), evalWrongType
 	}
 	if er.success {
-		client.sendEvent(event)
 		return er, nil
 	}
 	log.OrDiscard(client.logger).Log(context.Background(), slog.LevelError, "FB GO SDK: unexpected error in evaluation")
@@ -412,18 +412,23 @@ func (client *FBClient) evaluateInternal(featureFlagKey string, user *FBUser, re
 }
 
 func (client *FBClient) evaluateDetail(featureFlagKey string, user *FBUser, requiredType string, defaultValue interface{}) (EvalDetail, error) {
-	er, err := client.evaluateInternal(featureFlagKey, user, requiredType)
+	event := insight.NewFlagEvent(insight.ConvertFBUserToEventUser(user))
+	er, err := client.evaluateInternal(featureFlagKey, user, requiredType, event)
 	if err != nil {
 		return EvalDetail{Variation: defaultValue, Reason: er.reason, KeyName: er.keyName, Name: er.name}, err
 	}
-	return er.castVariationByFlagType(requiredType, defaultValue, client.logger)
+	detail, err := er.castVariationByFlagType(requiredType, defaultValue, client.logger)
+	if err == nil {
+		client.sendEvent(event)
+	}
+	return detail, err
 }
 
 // Variation calculates the value of a feature flag for a given user,
 // return a string variation for the given user, or defaultValue if the flag is disabled or an error occurs;
 // the details that explains how the flag value is explained and the error if any.
 //
-// The method sends insight events back to feature flag center
+// The method sends an evaluation event after successful conversion when flag insights are enabled.
 func (client *FBClient) Variation(featureFlagKey string, user FBUser, defaultValue string) (string, EvalDetail, error) {
 	ed, err := client.evaluateDetail(featureFlagKey, &user, FlagStringType, defaultValue)
 	if err != nil {
@@ -437,7 +442,7 @@ func (client *FBClient) Variation(featureFlagKey string, user FBUser, defaultVal
 // return a bool variation for the given user, or defaultValue if the flag is disabled or an error occurs;
 // the details that explains how the flag value is explained and the error if any.
 //
-// The method sends insight events back to feature flag center
+// The method sends an evaluation event after successful conversion when flag insights are enabled.
 func (client *FBClient) BoolVariation(featureFlagKey string, user FBUser, defaultValue bool) (bool, EvalDetail, error) {
 	ed, err := client.evaluateDetail(featureFlagKey, &user, FlagBoolType, defaultValue)
 	if err != nil {
@@ -451,7 +456,7 @@ func (client *FBClient) BoolVariation(featureFlagKey string, user FBUser, defaul
 // return an int variation for the given user, or defaultValue if the flag is disabled or an error occurs;
 // the details that explains how the flag value is explained and the error if any.
 //
-// The method sends insight events back to feature flag center
+// The method sends an evaluation event after successful conversion when flag insights are enabled.
 func (client *FBClient) IntVariation(featureFlagKey string, user FBUser, defaultValue int) (int, EvalDetail, error) {
 	ed, err := client.evaluateDetail(featureFlagKey, &user, FlagNumericType, defaultValue)
 	if err != nil {
@@ -465,7 +470,7 @@ func (client *FBClient) IntVariation(featureFlagKey string, user FBUser, default
 // return a float variation for the given user, or defaultValue if the flag is disabled or an error occurs;
 // the details that explains how the flag value is explained and the error if any.
 //
-// The method sends insight events back to feature flag center
+// The method sends an evaluation event after successful conversion when flag insights are enabled.
 func (client *FBClient) DoubleVariation(featureFlagKey string, user FBUser, defaultValue float64) (float64, EvalDetail, error) {
 	ed, err := client.evaluateDetail(featureFlagKey, &user, FlagNumericType, defaultValue)
 	if err != nil {
@@ -479,7 +484,7 @@ func (client *FBClient) DoubleVariation(featureFlagKey string, user FBUser, defa
 // return a json object variation for the given user, or defaultValue if the flag is disabled or an error occurs;
 // the details that explains how the flag value is explained and the error if any.
 //
-// The method sends insight events back to feature flag center
+// The method sends an evaluation event after successful conversion when flag insights are enabled.
 func (client *FBClient) JsonVariation(featureFlagKey string, user FBUser, defaultValue interface{}) (interface{}, EvalDetail, error) {
 	ed, err := client.evaluateDetail(featureFlagKey, &user, FlagJsonType, defaultValue)
 	if err != nil {
