@@ -19,14 +19,14 @@ If you want to use your own data source, see [Offline Mode](#offline-mode).
 
 ## Get Started
 
-Version 2.0.0 requires Go 1.26.0 or later. See [Migrating from v1 to v2](MIGRATION.md) for import and logging changes.
+Version 2.1.0 requires Go 1.26.0 or later. See [Migrating from v1 to v2](MIGRATION.md) for import and logging changes.
 
 ### Installation
 
-Install version 2.0.0 with:
+Install the latest release, version 2.1.0, with:
 
 ```
-go get github.com/featbit/featbit-go-sdk/v2@v2.0.0
+go get github.com/featbit/featbit-go-sdk/v2@v2.1.0
 ```
 
 ### Prerequisite
