@@ -26,27 +26,27 @@ type AllFlagState interface {
 	// GetStringVariation return the string value of a given flag key name or default value if flag not existed;
 	// details that that explains how the flag value is explained and the error if any.
 	//
-	// The method sends insight events back to feature flag center
+	// The method sends an evaluation event after successful conversion if insights were enabled when this snapshot was created.
 	GetStringVariation(featureFlagKey string, defaultValue string) (string, EvalDetail, error)
 	// GetBoolVariation return the bool value of a given flag key name or default value if flag not existed;
 	// details that that explains how the flag value is explained and the error if any.
 	//
-	// The method sends insight events back to feature flag center
+	// The method sends an evaluation event after successful conversion if insights were enabled when this snapshot was created.
 	GetBoolVariation(featureFlagKey string, defaultValue bool) (bool, EvalDetail, error)
 	// GetIntVariation return the int value of a given flag key name or default value if flag not existed;
 	// details that that explains how the flag value is explained and the error if any.
 	//
-	// The method sends insight events back to feature flag center
+	// The method sends an evaluation event after successful conversion if insights were enabled when this snapshot was created.
 	GetIntVariation(featureFlagKey string, defaultValue int) (int, EvalDetail, error)
 	// GetDoubleVariation return the float value of a given flag key name or default value if flag not existed;
 	// details that that explains how the flag value is explained and the error if any.
 	//
-	// The method sends insight events back to feature flag center
+	// The method sends an evaluation event after successful conversion if insights were enabled when this snapshot was created.
 	GetDoubleVariation(featureFlagKey string, defaultValue float64) (float64, EvalDetail, error)
 	// GetJsonVariation return the json object of a given flag key name or default value if flag not existed;
 	// details that that explains how the flag value is explained and the error if any.
 	//
-	// The method sends insight events back to feature flag center
+	// The method sends an evaluation event after successful conversion if insights were enabled when this snapshot was created.
 	GetJsonVariation(featureFlagKey string, defaultValue interface{}) (interface{}, EvalDetail, error)
 }
 

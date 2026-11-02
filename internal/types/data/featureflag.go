@@ -11,6 +11,7 @@ type FeatureFlag struct {
 	Deleted               bool         `json:"isArchived"`
 	ExptIncludeAllTargets bool         `json:"exptIncludeAllTargets"`
 	Enabled               bool         `json:"isEnabled"`
+	InsightsEnabled       bool         `json:"insightsEnabled"`
 	Name                  string       `json:"name"`
 	Key                   string       `json:"key"`
 	VariationType         string       `json:"variationType"`
@@ -44,12 +45,18 @@ func (f *FeatureFlag) UnmarshalJSON(bytes []byte) error {
 	type tmpFeatureFlag FeatureFlag
 	tmp := struct {
 		*tmpFeatureFlag
-		UpdatedAt time.Time `json:"updatedAt"`
+		UpdatedAt       time.Time   `json:"updatedAt"`
+		InsightsEnabled interface{} `json:"insightsEnabled"`
 	}{
 		tmpFeatureFlag: (*tmpFeatureFlag)(f),
 	}
 	if err := json.Unmarshal(bytes, &tmp); err != nil {
 		return err
+	}
+	// Only an explicit boolean false disables collection, including when reusing an object.
+	f.InsightsEnabled = true
+	if enabled, ok := tmp.InsightsEnabled.(bool); ok {
+		f.InsightsEnabled = enabled
 	}
 	f.timestamp = tmp.UpdatedAt.UnixNano() / int64(time.Millisecond)
 	if !f.Deleted {

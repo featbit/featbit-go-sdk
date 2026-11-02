@@ -73,7 +73,7 @@ func (e *evaluator) evaluate(flag *data.FeatureFlag, user *FBUser, event Event) 
 	defer func() {
 		if er.success {
 			e.logger.Log(context.Background(), slog.LevelInfo, "FB Go SDK: feature flag evaluated", "user_key", user.GetKey(), "flag_key", flag.Key, "value", er.fv)
-			if event != nil {
+			if event != nil && flag.InsightsEnabled {
 				eventFlag := er.toEventFlag()
 				event.Add(eventFlag)
 			}
