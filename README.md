@@ -341,16 +341,5 @@ otherwise the custom event may not be included into the experiment result.
 - If you encounter a bug or would like to request a
   feature, [submit an issue](https://github.com/featbit/featbit-go-sdk/issues/new).
 
-### Per-flag evaluation insights
-
-The server-provided `insightsEnabled` flag property controls evaluation event collection.
-Only an explicit boolean `false` disables collection; missing values preserve the default enabled behavior.
-This does not change flag values, evaluation reasons, experiment eligibility, Identify, or custom metrics.
-Offline mode and an externally managed event processor still take precedence.
-
-Events are sent only after evaluation and value conversion succeed. `AllLatestFlagsVariations`
-does not send events itself; its `Get*Variation` methods use the insights setting captured when
-the snapshot was created. Flag updates affect future evaluations, without removing already queued events.
-
 ## See Also
 - [Connect To Go Sdk](https://docs.featbit.co/sdk/overview#go)
