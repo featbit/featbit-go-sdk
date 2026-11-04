@@ -7,22 +7,21 @@ import (
 )
 
 type FeatureFlag struct {
-	Id                    string       `json:"id"`
-	Deleted               bool         `json:"isArchived"`
-	ExptIncludeAllTargets bool         `json:"exptIncludeAllTargets"`
-	Enabled               bool         `json:"isEnabled"`
-	InsightsEnabled       bool         `json:"insightsEnabled"`
-	Name                  string       `json:"name"`
-	Key                   string       `json:"key"`
-	VariationType         string       `json:"variationType"`
-	DisabledVariationId   string       `json:"disabledVariationId"`
-	Variations            []Variation  `json:"variations"`
-	TargetUsers           []TargetUser `json:"targetUsers"`
-	Rules                 []TargetRule `json:"rules"`
-	Fallthrough           Fallthrough  `json:"fallthrough"`
-	Tags                  []string     `json:"tags"`
-	timestamp             int64
-	variationMap          map[string]Variation
+	Id                  string       `json:"id"`
+	Deleted             bool         `json:"isArchived"`
+	Enabled             bool         `json:"isEnabled"`
+	InsightsEnabled     bool         `json:"insightsEnabled"`
+	Name                string       `json:"name"`
+	Key                 string       `json:"key"`
+	VariationType       string       `json:"variationType"`
+	DisabledVariationId string       `json:"disabledVariationId"`
+	Variations          []Variation  `json:"variations"`
+	TargetUsers         []TargetUser `json:"targetUsers"`
+	Rules               []TargetRule `json:"rules"`
+	Fallthrough         Fallthrough  `json:"fallthrough"`
+	Tags                []string     `json:"tags"`
+	timestamp           int64
+	variationMap        map[string]Variation
 }
 
 func (f *FeatureFlag) GetId() string {

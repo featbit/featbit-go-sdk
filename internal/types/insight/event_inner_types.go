@@ -24,22 +24,20 @@ type EventVariation struct {
 }
 
 type EventFlag struct {
-	FlagKey          string         `json:"featureFlagKey"`
-	SendToExperiment bool           `json:"sendToExperiment"`
-	Timestamp        int64          `json:"timestamp"`
-	Variation        EventVariation `json:"variation"`
+	FlagKey   string         `json:"featureFlagKey"`
+	Timestamp int64          `json:"timestamp"`
+	Variation EventVariation `json:"variation"`
 }
 
-func NewEventFlag(flagKey string, sendToExpt bool, variationId string, variation string, reason string) EventFlag {
+func NewEventFlag(flagKey string, variationId string, variation string, reason string) EventFlag {
 	return EventFlag{
 		Variation: EventVariation{
 			Id:     variationId,
 			Value:  variation,
 			Reason: reason,
 		},
-		FlagKey:          flagKey,
-		SendToExperiment: sendToExpt,
-		Timestamp:        time.Now().UnixNano() / int64(time.Millisecond),
+		FlagKey:   flagKey,
+		Timestamp: time.Now().UnixNano() / int64(time.Millisecond),
 	}
 }
 

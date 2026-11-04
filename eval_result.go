@@ -93,14 +93,13 @@ func (a allFlagStateImpl) get(featureFlagKey string, requiredType string, defaul
 }
 
 type evalResult struct {
-	id               string
-	fv               string
-	sendToExperiment bool
-	success          bool
-	flagType         string
-	reason           string
-	keyName          string
-	name             string
+	id       string
+	fv       string
+	success  bool
+	flagType string
+	reason   string
+	keyName  string
+	name     string
 }
 
 func errorResult(reason string, keyName string, name string) *evalResult {
@@ -108,7 +107,7 @@ func errorResult(reason string, keyName string, name string) *evalResult {
 }
 
 func (er *evalResult) toEventFlag() insight.EventFlag {
-	return insight.NewEventFlag(er.keyName, er.sendToExperiment, er.id, er.fv, er.reason)
+	return insight.NewEventFlag(er.keyName, er.id, er.fv, er.reason)
 }
 
 func (er *evalResult) checkType(requiredType string) bool {

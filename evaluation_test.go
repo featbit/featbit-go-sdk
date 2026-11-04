@@ -1,13 +1,51 @@
 package featbit
 
 import (
+	"encoding/json"
 	"github.com/featbit/featbit-go-sdk/v2/interfaces"
 	"github.com/featbit/featbit-go-sdk/v2/internal/datastorage"
 	"github.com/featbit/featbit-go-sdk/v2/internal/types/data"
 	"github.com/featbit/featbit-go-sdk/v2/internal/types/insight"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
+
+func TestEvaluationEventPayload(t *testing.T) {
+	for _, tc := range []struct {
+		flag   *data.FeatureFlag
+		user   interfaces.FBUser
+		reason string
+	}{
+		{disabledFlag, user1, ReasonFlagOff},
+		{flag, user2, ReasonTargetMatch},
+		{flag, user3, ReasonRuleMatch},
+		{flag, user10, ReasonFallthrough},
+	} {
+		t.Run(tc.reason, func(t *testing.T) {
+			event := insight.NewFlagEvent(insight.ConvertFBUserToEventUser(&tc.user))
+			result := eval.evaluate(tc.flag, &tc.user, event)
+			require.True(t, result.success)
+			require.Equal(t, tc.reason, result.reason)
+			require.Len(t, event.Variations, 1)
+			payload, err := json.Marshal(event)
+			require.NoError(t, err)
+			var decoded struct {
+				Variations []map[string]interface{} `json:"variations"`
+			}
+			require.NoError(t, json.Unmarshal(payload, &decoded))
+			require.Len(t, decoded.Variations, 1)
+			require.Positive(t, event.Variations[0].Timestamp)
+			require.Equal(t, map[string]interface{}{
+				"featureFlagKey": tc.flag.Key,
+				"timestamp":      float64(event.Variations[0].Timestamp),
+				"variation": map[string]interface{}{
+					"id": result.id, "value": result.fv, "reason": tc.reason,
+				},
+			}, decoded.Variations[0])
+		})
+	}
+}
 
 var user1, _ = interfaces.NewUserBuilder("test-user-1").Build()
 
