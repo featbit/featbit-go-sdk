@@ -45,10 +45,9 @@ type TargetUser struct {
 }
 
 type TargetRule struct {
-	IncludedInExpt bool               `json:"includedInExpt"`
-	Conditions     []Condition        `json:"conditions"`
-	Variations     []RolloutVariation `json:"variations"`
-	DispatchKey    string             `json:"dispatchKey"`
+	Conditions  []Condition        `json:"conditions"`
+	Variations  []RolloutVariation `json:"variations"`
+	DispatchKey string             `json:"dispatchKey"`
 }
 
 type Condition struct {
@@ -58,20 +57,11 @@ type Condition struct {
 }
 
 type RolloutVariation struct {
-	Id          string    `json:"id"`
-	Rollout     []float64 `json:"rollout"`
-	ExptRollout float64   `json:"exptRollout"`
-}
-
-func (r *RolloutVariation) SplittingPercentage() float64 {
-	if len(r.Rollout) == 2 {
-		return r.Rollout[1] - r.Rollout[0]
-	}
-	return 0
+	Id      string    `json:"id"`
+	Rollout []float64 `json:"rollout"`
 }
 
 type Fallthrough struct {
-	IncludedInExpt bool               `json:"includedInExpt"`
-	Variations     []RolloutVariation `json:"variations"`
-	DispatchKey    string             `json:"dispatchKey"`
+	Variations  []RolloutVariation `json:"variations"`
+	DispatchKey string             `json:"dispatchKey"`
 }

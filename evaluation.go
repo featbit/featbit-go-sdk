@@ -9,7 +9,6 @@ import (
 )
 
 const (
-	ExptKeyPrefix          = "expt"
 	ReasonFlagOff          = "flag off"
 	ReasonTargetMatch      = "target match"
 	ReasonRuleMatch        = "rule match"
@@ -92,14 +91,13 @@ func (e *evaluator) evaluate(flag *data.FeatureFlag, user *FBUser, event Event) 
 func (e *evaluator) matchFeatureFlagDisabledUserVariation(flag *data.FeatureFlag, _ *FBUser) (*evalResult, bool) {
 	if !flag.Enabled {
 		return &evalResult{
-			id:               flag.DisabledVariationId,
-			reason:           ReasonFlagOff,
-			keyName:          flag.Key,
-			name:             flag.Name,
-			sendToExperiment: false,
-			fv:               flag.GetFlagValue(flag.DisabledVariationId),
-			success:          true,
-			flagType:         flag.VariationType,
+			id:       flag.DisabledVariationId,
+			reason:   ReasonFlagOff,
+			keyName:  flag.Key,
+			name:     flag.Name,
+			fv:       flag.GetFlagValue(flag.DisabledVariationId),
+			success:  true,
+			flagType: flag.VariationType,
 		}, true
 	}
 	return nil, false
@@ -110,14 +108,13 @@ func (e *evaluator) matchTargetedUserVariation(flag *data.FeatureFlag, user *FBU
 		for _, keyId := range targetUser.KeyIds {
 			if keyId == user.GetKey() {
 				return &evalResult{
-					id:               targetUser.VariationId,
-					reason:           ReasonTargetMatch,
-					keyName:          flag.Key,
-					name:             flag.Name,
-					sendToExperiment: flag.ExptIncludeAllTargets,
-					fv:               flag.GetFlagValue(targetUser.VariationId),
-					success:          true,
-					flagType:         flag.VariationType,
+					id:       targetUser.VariationId,
+					reason:   ReasonTargetMatch,
+					keyName:  flag.Key,
+					name:     flag.Name,
+					fv:       flag.GetFlagValue(targetUser.VariationId),
+					success:  true,
+					flagType: flag.VariationType,
 				}, true
 			}
 		}
@@ -134,12 +131,12 @@ func (e *evaluator) matchConditionedUserVariation(flag *data.FeatureFlag, user *
 		}
 	}
 	if rule != nil {
-		return getRolloutVariationValue(flag, rule.Variations, user, ReasonRuleMatch, rule.IncludedInExpt, rule.DispatchKey)
+		return getRolloutVariationValue(flag, rule.Variations, user, ReasonRuleMatch, rule.DispatchKey)
 	}
 	return nil, false
 }
 
 func (e *evaluator) matchFallThroughUserVariation(flag *data.FeatureFlag, user *FBUser) (*evalResult, bool) {
 	ft := flag.Fallthrough
-	return getRolloutVariationValue(flag, ft.Variations, user, ReasonFallthrough, ft.IncludedInExpt, ft.DispatchKey)
+	return getRolloutVariationValue(flag, ft.Variations, user, ReasonFallthrough, ft.DispatchKey)
 }

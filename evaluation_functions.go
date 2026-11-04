@@ -182,7 +182,6 @@ func getRolloutVariationValue(flag *data.FeatureFlag,
 	rollouts []data.RolloutVariation,
 	user *FBUser,
 	reason string,
-	ruleIncludedInExperiment bool,
 	dispatchKey string,
 ) (*evalResult, bool) {
 	key := dispatchKey
@@ -200,37 +199,14 @@ func getRolloutVariationValue(flag *data.FeatureFlag,
 	}
 	if r != nil {
 		return &evalResult{
-			id:               r.Id,
-			reason:           reason,
-			keyName:          flag.Key,
-			name:             flag.Name,
-			sendToExperiment: isSendToExperiment(dispatchKeyValue, r, flag.ExptIncludeAllTargets, ruleIncludedInExperiment),
-			fv:               flag.GetFlagValue(r.Id),
-			success:          true,
-			flagType:         flag.VariationType,
+			id:       r.Id,
+			reason:   reason,
+			keyName:  flag.Key,
+			name:     flag.Name,
+			fv:       flag.GetFlagValue(r.Id),
+			success:  true,
+			flagType: flag.VariationType,
 		}, true
 	}
 	return nil, false
-}
-
-func isSendToExperiment(dispatchKey string, rollout *data.RolloutVariation, exptIncludeAllRules bool, ruleIncludedInExperiment bool) bool {
-	if exptIncludeAllRules {
-		return true
-	}
-
-	if ruleIncludedInExperiment {
-		sendToExperimentPercentage := rollout.ExptRollout
-		splittingPercentage := rollout.SplittingPercentage()
-		if sendToExperimentPercentage == 0 || splittingPercentage == 0 {
-			return false
-		}
-		upperBound := sendToExperimentPercentage / splittingPercentage
-		if upperBound > 1 {
-			upperBound = 1
-		}
-		exptDispatchKeyValue := strings.Join([]string{ExptKeyPrefix, dispatchKey}, "")
-		return util.IfKeyBelongsPercentage(exptDispatchKeyValue, []float64{0, upperBound})
-	}
-
-	return false
 }
